@@ -10,11 +10,12 @@
 // ---------------------------------------- Constants
 
 // SVG size
-var WIDTH = 500;
+var WIDTH = 400;
 var HEIGHT = 200;
 
 // padding values
-var VERTICAL_PADDING = 40;
+var BOTTOM_PADDING = 30;
+var TOP_PADDING = 30;
 var HORIZONTAL_PADDING = 20;
 
 // approximate number of ticks on the WAR axis
@@ -24,6 +25,9 @@ var WAR_TICKS = 7;
 var LINE_WIDTH = 2;
 var FIP_WAR_COLOR = 'blue';
 var RA9_WAR_COLOR = 'red';
+
+// Text specifications
+var TITLE_SIZE = 20; // set in the .title class in the css file
 
 // ---------------------------------------- Visualization
 
@@ -40,7 +44,7 @@ for (var i = 0; i < pitcherDataProcessed.length; i++) {
 	// a scale for WAR from 0 to the highest WAR value
 	var warScale = d3.scale.linear()
 					 .domain([0, d3.max(pitcherDataProcessed[i].records, function(d) { return d.WARfip > d.WARra9 ? d.WARfip : d.WARra9; })])
-					 .range([HEIGHT - VERTICAL_PADDING, VERTICAL_PADDING]);
+					 .range([HEIGHT - BOTTOM_PADDING, TOP_PADDING]);
 
 	// a scale for the years spanning the full set of years
 	var yearScale = d3.scale.linear()
@@ -79,7 +83,7 @@ for (var i = 0; i < pitcherDataProcessed.length; i++) {
 
 	svg.append('g')
 		.attr('class', 'axis')
-		.attr('transform', 'translate(0,' + (HEIGHT - VERTICAL_PADDING) + ')')
+		.attr('transform', 'translate(0,' + (HEIGHT - BOTTOM_PADDING) + ')')
 		.call(yearAxis);
 
 	// vertical WAR axis
@@ -92,4 +96,13 @@ for (var i = 0; i < pitcherDataProcessed.length; i++) {
 		.attr('class', 'axis')
 		.attr('transform', 'translate(' + HORIZONTAL_PADDING +',0)')
 		.call(warAxis);
+
+	// -------------------- Title
+	var title = svg.append('text')
+		.attr('class', 'title')
+		.attr('y', TITLE_SIZE)
+		.text(pitcherDataProcessed[i].name);
+
+	// center the title
+	title.attr('x', (WIDTH - $(title[0][0]).width()) / 2);
 }
