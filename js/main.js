@@ -27,11 +27,15 @@ var LINE_WIDTH = 2;
 var FIP_WAR_COLOR = 'blue';
 var RA9_WAR_COLOR = 'red';
 
-// Text specifications
-var CHART_TITLE_SIZE = 20; // set in the .chart-title class in the css file
-var AXIS_TITLE_SIZE = 15; // set in the .axis-title class in the css file
+// Text sizing
+var CHART_TITLE_SIZE = 20; // set in the .chart-title class
+var AXIS_TITLE_SIZE = 15;  // set in the .axis-title class
+var CHAMP_SIZE = 10;       // set in the .champ-note class
+
+// Text padding
 var AXIS_BOTTOM_PADDING = 20; // accounts for axis size and spacing
 var AXIS_LEFT_PADDING = 25;   // accounts for axis size and spacing
+var CHAMP_INTERIOR_PADDING = 1;
 
 // champion stats
 var CHAMP_STATS = ['W', 'ERA', 'CG', 'SHO', 'IP', 'SO', 'FIP', 'WHIP'];
@@ -50,16 +54,19 @@ $.each(pitcherDataProcessed, function(index, pitcherData) {
 	// -------------------- Scales
 	// a scale for WAR from 0 to the highest WAR value
 	var warScale = d3.scale.linear()
-					 .domain([0, d3.max(pitcherData.records, function(d) { return d.WARfip > d.WARra9 ? d.WARfip : d.WARra9; })])
+					 .domain([0, d3.max(pitcherData.records, function(d) {
+					 	return d.WARfip > d.WARra9 ? d.WARfip : d.WARra9;
+					 })])
 					 .range([HEIGHT - CHART_BOTTOM_PADDING, CHART_TOP_PADDING]);
 
 	// a scale for the years spanning the full set of years
 	var yearScale = d3.scale.linear()
-					  .domain([d3.min(pitcherData.records, function(d) { return d.year; }), d3.max(pitcherData.records, function(d) { return d.year; })])
+					  .domain([d3.min(pitcherData.records, function(d) { return d.year; }),
+					  		d3.max(pitcherData.records, function(d) { return d.year; })])
 					  .range([CHART_LEFT_PADDING, WIDTH - CHART_RIGHT_PADDING]);
 
 	// -------------------- Line graphs
-	// helper function to return the results of a line function for both types of WAR, as determined by the parameter
+	// returns the results of a line function for both types of WAR
 	function warGraph(WAR) {
 		return d3.svg.line().x(function(d) { return yearScale(d.year); })
 							.y(function(d) { return warScale(d[WAR]); })
@@ -88,7 +95,7 @@ $.each(pitcherDataProcessed, function(index, pitcherData) {
 		.call(d3.svg.axis()
 					.scale(yearScale)
 					.orient('bottom')
-					.ticks(pitcherData.records.length / 2) // ticks every other year
+					.ticks(pitcherData.records.length / 2) // every other year
 					.tickFormat(d3.format('d')));
 
 	// vertical WAR axis
@@ -113,7 +120,8 @@ $.each(pitcherDataProcessed, function(index, pitcherData) {
 	// horizontal year axis title
 	var yearAxisTitle = svg.append('text')
 							.attr('class', 'axis-title')
-							.attr('y', HEIGHT - CHART_BOTTOM_PADDING + AXIS_TITLE_SIZE + AXIS_BOTTOM_PADDING)
+							.attr('y', HEIGHT - CHART_BOTTOM_PADDING +
+								AXIS_TITLE_SIZE + AXIS_BOTTOM_PADDING)
 							.text('Year');
 
 	// center the horizontal axis title
@@ -121,8 +129,7 @@ $.each(pitcherDataProcessed, function(index, pitcherData) {
 
 	// vertical WAR axis title
 	var warAxisTitle = svg.append('text')
-							.attr('class', 'axis-title')
-							.attr('class', 'vert-text')
+							.attr('class', 'axis-title vert-text')
 							.attr('x', -HEIGHT / 2)
 							.attr('y', CHART_LEFT_PADDING - AXIS_LEFT_PADDING)
 							.text('WAR');
@@ -138,4 +145,27 @@ $.each(pitcherDataProcessed, function(index, pitcherData) {
 
 	// center the title
 	centerObj(chartTitle, true);
+
+	// -------------------- Champ stats
+	$.each(pitcherData.records, function(index, record) {
+		// initial value of y -- directly above the highest WAR for that year
+		var y = warScale(Math.max(record.WARra9, record.WARfip));
+		$.each(CHAMP_STATS, function(index, stat) {
+			// if the pitcher was the champion of this stat for this year
+			if(record[stat + 'champ']) {
+				// adjust y for the next stat -- first directly below highest WAR
+				y += CHAMP_SIZE + CHAMP_INTERIOR_PADDING;
+
+				// add a note to indicate they were that stats' champion
+				var champNote = svg.append('text')
+									.attr('class', 'champ-note')
+									.attr('x', yearScale(record.year))
+									.attr('y', y)
+									.text(stat);
+
+				// adjust x position to center notes on the year
+				champNote.attr('x', champNote.attr('x') - $(champNote[0][0]).width() / 2);
+			}
+		});
+	});
 });
