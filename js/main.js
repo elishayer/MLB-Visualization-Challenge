@@ -159,7 +159,7 @@ $.each(pitcherDataProcessed, function(index, pitcherData) {
 	// center the title
 	centerObj(chartTitle, true);
 
-	// -------------------- Champ stats
+	// -------------------- Champ stats and year lines
 	$.each(pitcherData.records, function(index, record) {
 		// initial value of y -- directly above the highest WAR for that year
 		var y = warScale(Math.max(record.WARra9, record.WARfip));
@@ -179,6 +179,15 @@ $.each(pitcherDataProcessed, function(index, pitcherData) {
 				// adjust x position to center notes on the year
 				champNote.attr('x', champNote.attr('x') - $(champNote[0][0]).width() / 2);
 			}
+
 		});
+
+		// add a vertical line for each year
+		svg.append('line')
+			.attr('class', 'year-line')
+			.attr('x1', yearScale(record.year))
+			.attr('y1', warScale(Math.min(0, record.WARra9, record.WARfip)))
+			.attr('x2', yearScale(record.year))
+			.attr('y2', warScale(Math.max(record.WARra9, record.WARfip)));
 	});
 });

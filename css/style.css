@@ -46,3 +46,9 @@ svg {
     font-family: sans-serif;
     font-size: 10px; /* If changed, make corresponding change to js constant */
 }
+
+/* year lines */
+.year-line {
+    stroke: #222222;
+    stroke-width: 1px;
+}
