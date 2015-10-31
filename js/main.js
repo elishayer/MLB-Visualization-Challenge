@@ -22,10 +22,12 @@ var CHART_RIGHT_PADDING = 20;
 // approximate number of ticks on the WAR axis
 var WAR_TICKS = 7;
 
-// line specifications
-var LINE_WIDTH = 2;
-var FIP_WAR_COLOR = 'blue';
-var RA9_WAR_COLOR = 'red';
+// line width, color, and fill
+var LINE_WIDTH = 0;
+var FIP_WAR_COLOR = '#0000ff';
+var RA9_WAR_COLOR = '#ff0000';
+var FIP_WAR_FILL = 'rgba(0, 0, 256, 0.75)';
+var RA9_WAR_FILL = 'rgba(256, 0, 0, 0.75)';
 
 // Text sizing
 var CHART_TITLE_SIZE = 20; // set in the .chart-title class
@@ -68,24 +70,35 @@ $.each(pitcherDataProcessed, function(index, pitcherData) {
 	// -------------------- Line graphs
 	// returns the results of a line function for both types of WAR
 	function warGraph(WAR) {
-		return d3.svg.line().x(function(d) { return yearScale(d.year); })
-							.y(function(d) { return warScale(d[WAR]); })
-							.interpolate('linear')(pitcherData.records);
-	}
+		// get the simple line -- time plot, no shading
+		var line = d3.svg.line().x(function(d) { return yearScale(d.year); })
+								.y(function(d) { return warScale(d[WAR]); })
+								.interpolate('linear')(pitcherData.records);
 
-	// draw FIP WAR line
-	svg.append('path')
-		.attr('d', warGraph('WARfip'))
-		.attr('stroke', FIP_WAR_COLOR)
-		.attr('stroke-width', LINE_WIDTH)
-		.attr('fill', 'none');
+		// complete the line
+		// add a point at the bottom right of the chart
+		line += 'L' + (WIDTH - CHART_RIGHT_PADDING) + ',' + (HEIGHT - CHART_BOTTOM_PADDING);
+		// add a point at the bottom left of the chart
+		line += 'L' + CHART_LEFT_PADDING + ',' + (HEIGHT - CHART_BOTTOM_PADDING);
+		// return to the first point in the d3-generated line
+		line += 'Z';
+
+		return line;
+	}
 
 	// draw RA9 WAR line
 	svg.append('path')
 		.attr('d', warGraph('WARra9'))
 		.attr('stroke', RA9_WAR_COLOR)
 		.attr('stroke-width', LINE_WIDTH)
-		.attr('fill', 'none');
+		.attr('fill', RA9_WAR_FILL);
+
+	// draw FIP WAR line
+	svg.append('path')
+		.attr('d', warGraph('WARfip'))
+		.attr('stroke', FIP_WAR_COLOR)
+		.attr('stroke-width', LINE_WIDTH)
+		.attr('fill', FIP_WAR_FILL);
 
 	// -------------------- Axes
 	// horizontal year axis
