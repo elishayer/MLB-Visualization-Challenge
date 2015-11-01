@@ -16,7 +16,7 @@ var HEIGHT = 200;
 // chart padding values
 var CHART_BOTTOM_PADDING = 40;
 var CHART_TOP_PADDING = 30;
-var CHART_LEFT_PADDING = 40;
+var CHART_LEFT_PADDING = 150;
 var CHART_RIGHT_PADDING = 20;
 
 // approximate number of ticks on the WAR axis
@@ -47,6 +47,12 @@ var WAR_SIZE = 10;
 var WAR_RIGHT_PADDING = 80;
 var WAR_TOP_PADDING = 5;
 var WAR_INTERIOR_PADDING = 3;
+
+// image location and size
+var IMAGE_X = 10;
+var IMAGE_Y = 10;
+var IMAGE_WIDTH = 100;
+var IMAGE_HEIGHT = 100;
 
 // ---------------------------------------- Visualization
 
@@ -220,5 +226,13 @@ $.each(pitcherDataProcessed, function(index, pitcherData) {
 		.attr('x', WIDTH - WAR_RIGHT_PADDING)
 		.attr('y', WAR_TOP_PADDING + 2 * WAR_SIZE + WAR_INTERIOR_PADDING)
 		.text('FIP WAR: ' + getCareerWar(pitcherData.records, 'WARfip'));
+
+	// -------------------- Player images
+	svg.append('image')
+		.attr('xlink:href', './images/pitchers/' + pitcherData.name.replace(' ', '_') + '.jpg')
+		.attr('x', IMAGE_X)
+		.attr('y', IMAGE_Y)
+		.attr('width', IMAGE_WIDTH)
+		.attr('height', IMAGE_HEIGHT);
 
 });
