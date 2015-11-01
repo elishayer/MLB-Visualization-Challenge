@@ -7,11 +7,11 @@
  * hitters in MLB history using the d3.js library.
  */
 
-// ---------------------------------------- Constants
+// ======================================== Constants
 
-// SVG size
-var WIDTH = 500;
-var HEIGHT = 250;
+// Chart SVG size
+var CHART_WIDTH = 500;
+var CHART_HEIGHT = 250;
 
 // chart padding values
 var CHART_BOTTOM_PADDING = 100;
@@ -57,13 +57,13 @@ var IMAGE_HEIGHT = 100;
 // Award names and specifications
 var AWARDS = [{name: 'All Star', key: 'as'}, {name: 'World Series', key: 'ws'},
 	{name: 'Gold Glove', key: 'gg'}, {name: 'MVP', key: 'mvp'}, {name: 'Cy Young', key: 'cy'}];
-var AWARD_BASE_Y = HEIGHT - CHART_BOTTOM_PADDING + AXIS_TITLE_SIZE + AXIS_BOTTOM_PADDING + 10;
+var AWARD_BASE_Y = CHART_HEIGHT - CHART_BOTTOM_PADDING + AXIS_TITLE_SIZE + AXIS_BOTTOM_PADDING + 10;
 var AWARD_BASE_X = CHART_LEFT_PADDING - 5;
 var AWARD_SIZE = 10;
 var AWARD_INTERIOR_PADDING = 2;
 var AWARD_RADIUS = 3;
 
-// ---------------------------------------- Visualization
+// ======================================== Visualization
 
 // -------------------- WAR Scale
 // a scale for WAR from 0 to the highest WAR value
@@ -76,7 +76,7 @@ var warScale = d3.scale.linear()
 				 		return d.WARfip > d.WARra9 ? d.WARfip : d.WARra9;
 				 	})
 				 })])
-				 .range([HEIGHT - CHART_BOTTOM_PADDING, CHART_TOP_PADDING]);
+				 .range([CHART_HEIGHT - CHART_BOTTOM_PADDING, CHART_TOP_PADDING]);
 
 // create a graph for each pitcher
 $.each(pitcherDataProcessed, function(index, pitcherData) {
@@ -84,15 +84,15 @@ $.each(pitcherDataProcessed, function(index, pitcherData) {
 	// initialize a SVG container, retain for easier future access
 	var svg = d3.select('body')
 				.append('svg')
-				.attr('width', WIDTH)
-				.attr('height', HEIGHT);
+				.attr('width', CHART_WIDTH)
+				.attr('height', CHART_HEIGHT);
 
 	// -------------------- Year Scale
 	// a scale for the years spanning the full set of years
 	var yearScale = d3.scale.linear()
 					  .domain([d3.min(pitcherData.records, function(d) { return d.year; }),
 					  		d3.max(pitcherData.records, function(d) { return d.year; })])
-					  .range([CHART_LEFT_PADDING, WIDTH - CHART_RIGHT_PADDING]);
+					  .range([CHART_LEFT_PADDING, CHART_WIDTH - CHART_RIGHT_PADDING]);
 
 	// -------------------- Line graphs
 	// returns the results of a line function for both types of WAR
@@ -104,9 +104,9 @@ $.each(pitcherDataProcessed, function(index, pitcherData) {
 
 		// complete the line
 		// add a point at the bottom right of the chart
-		line += 'L' + (WIDTH - CHART_RIGHT_PADDING) + ',' + (HEIGHT - CHART_BOTTOM_PADDING);
+		line += 'L' + (CHART_WIDTH - CHART_RIGHT_PADDING) + ',' + (CHART_HEIGHT - CHART_BOTTOM_PADDING);
 		// add a point at the bottom left of the chart
-		line += 'L' + CHART_LEFT_PADDING + ',' + (HEIGHT - CHART_BOTTOM_PADDING);
+		line += 'L' + CHART_LEFT_PADDING + ',' + (CHART_HEIGHT - CHART_BOTTOM_PADDING);
 		// return to the first point in the d3-generated line
 		line += 'Z';
 
@@ -131,7 +131,7 @@ $.each(pitcherDataProcessed, function(index, pitcherData) {
 	// horizontal year axis
 	svg.append('g')
 		.attr('class', 'axis')
-		.attr('transform', 'translate(0,' + (HEIGHT - CHART_BOTTOM_PADDING) + ')')
+		.attr('transform', 'translate(0,' + (CHART_HEIGHT - CHART_BOTTOM_PADDING) + ')')
 		.call(d3.svg.axis()
 					.scale(yearScale)
 					.orient('bottom')
@@ -151,16 +151,16 @@ $.each(pitcherDataProcessed, function(index, pitcherData) {
 	// helper function to center objects horizontally
 	function centerObj(obj, isHorizontal) {
 		if (isHorizontal) {
-			obj.attr('x', (WIDTH - $(obj[0][0]).width()) / 2);
+			obj.attr('x', (CHART_WIDTH - $(obj[0][0]).width()) / 2);
 		} else {
-			obj.attr('x', -(HEIGHT + $(obj[0][0]).width()) / 2);
+			obj.attr('x', -(CHART_HEIGHT + $(obj[0][0]).width()) / 2);
 		}
 	}
 
 	// horizontal year axis title
 	var yearAxisTitle = svg.append('text')
 							.attr('class', 'axis-title')
-							.attr('y', HEIGHT - CHART_BOTTOM_PADDING +
+							.attr('y', CHART_HEIGHT - CHART_BOTTOM_PADDING +
 								AXIS_TITLE_SIZE + AXIS_BOTTOM_PADDING)
 							.text('Year');
 
@@ -170,7 +170,7 @@ $.each(pitcherDataProcessed, function(index, pitcherData) {
 	// vertical WAR axis title
 	var warAxisTitle = svg.append('text')
 							.attr('class', 'axis-title vert-text')
-							.attr('x', -HEIGHT / 2)
+							.attr('x', -CHART_HEIGHT / 2)
 							.attr('y', CHART_LEFT_PADDING - AXIS_LEFT_PADDING)
 							.text('WAR');
 
@@ -226,13 +226,13 @@ $.each(pitcherDataProcessed, function(index, pitcherData) {
 
 	svg.append('text')
 		.attr('class', 'war-text ra9-war')
-		.attr('x', WIDTH - WAR_RIGHT_PADDING)
+		.attr('x', CHART_WIDTH - WAR_RIGHT_PADDING)
 		.attr('y', WAR_TOP_PADDING + WAR_SIZE)
 		.text('RA9 WAR: ' + getCareerWar(pitcherData.records, 'WARra9'));
 
 	svg.append('text')
 		.attr('class', 'war-text fip-war')
-		.attr('x', WIDTH - WAR_RIGHT_PADDING)
+		.attr('x', CHART_WIDTH - WAR_RIGHT_PADDING)
 		.attr('y', WAR_TOP_PADDING + 2 * WAR_SIZE + WAR_INTERIOR_PADDING)
 		.text('FIP WAR: ' + getCareerWar(pitcherData.records, 'WARfip'));
 
