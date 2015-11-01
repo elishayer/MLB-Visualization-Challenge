@@ -50,6 +50,19 @@ var WAR_INTERIOR_PADDING = 3;
 
 // ---------------------------------------- Visualization
 
+// -------------------- WAR Scale
+// a scale for WAR from 0 to the highest WAR value
+// same scale is used for all pitchers to improve ability to compare
+var warScale = d3.scale.linear()
+				 .domain([0, d3.max(pitcherDataProcessed, function(pitcherData) {
+				 	// the highest of all WARs of all pitchers
+				 	return d3.max(pitcherData.records, function(d) {
+				 		// the highest of all WARs for all years, and higher of RA9/FIP
+				 		return d.WARfip > d.WARra9 ? d.WARfip : d.WARra9;
+				 	})
+				 })])
+				 .range([HEIGHT - CHART_BOTTOM_PADDING, CHART_TOP_PADDING]);
+
 // create a graph for each pitcher
 $.each(pitcherDataProcessed, function(index, pitcherData) {
 	// -------------------- Initialization
@@ -59,14 +72,7 @@ $.each(pitcherDataProcessed, function(index, pitcherData) {
 				.attr('width', WIDTH)
 				.attr('height', HEIGHT);
 
-	// -------------------- Scales
-	// a scale for WAR from 0 to the highest WAR value
-	var warScale = d3.scale.linear()
-					 .domain([0, d3.max(pitcherData.records, function(d) {
-					 	return d.WARfip > d.WARra9 ? d.WARfip : d.WARra9;
-					 })])
-					 .range([HEIGHT - CHART_BOTTOM_PADDING, CHART_TOP_PADDING]);
-
+	// -------------------- Year Scale
 	// a scale for the years spanning the full set of years
 	var yearScale = d3.scale.linear()
 					  .domain([d3.min(pitcherData.records, function(d) { return d.year; }),
