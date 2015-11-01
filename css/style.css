@@ -57,7 +57,7 @@ svg {
 /* Career WAR text */
 .war-text {
     font-family: sans-serif;
-    font-size: 10px;
+    font-size: 10px; /* If changed, make corresponding change to js constant */
 }
 
 .fip-war {
@@ -66,4 +66,10 @@ svg {
 
 .ra9-war {
     fill: #ff0000;
+}
+
+/* Award text */
+.award-text {
+    font-family: sans-serif;
+    font-size: 10px; /* If changed, make corresponding change to js constant */
 }

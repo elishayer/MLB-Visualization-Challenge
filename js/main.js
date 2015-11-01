@@ -11,10 +11,10 @@
 
 // SVG size
 var WIDTH = 500;
-var HEIGHT = 200;
+var HEIGHT = 250;
 
 // chart padding values
-var CHART_BOTTOM_PADDING = 40;
+var CHART_BOTTOM_PADDING = 100;
 var CHART_TOP_PADDING = 30;
 var CHART_LEFT_PADDING = 150;
 var CHART_RIGHT_PADDING = 20;
@@ -53,6 +53,15 @@ var IMAGE_X = 10;
 var IMAGE_Y = 10;
 var IMAGE_WIDTH = 100;
 var IMAGE_HEIGHT = 100;
+
+// Award names and specifications
+var AWARDS = [{name: 'All Star', key: 'as'}, {name: 'World Series', key: 'ws'},
+	{name: 'Gold Glove', key: 'gg'}, {name: 'MVP', key: 'mvp'}, {name: 'Cy Young', key: 'cy'}];
+var AWARD_BASE_Y = HEIGHT - CHART_BOTTOM_PADDING + AXIS_TITLE_SIZE + AXIS_BOTTOM_PADDING + 10;
+var AWARD_BASE_X = CHART_LEFT_PADDING - 5;
+var AWARD_SIZE = 10;
+var AWARD_INTERIOR_PADDING = 2;
+var AWARD_RADIUS = 3;
 
 // ---------------------------------------- Visualization
 
@@ -234,5 +243,37 @@ $.each(pitcherDataProcessed, function(index, pitcherData) {
 		.attr('y', IMAGE_Y)
 		.attr('width', IMAGE_WIDTH)
 		.attr('height', IMAGE_HEIGHT);
+
+	// -------------------- Awards
+	// the height of the current horizontal award line
+	var yAward = AWARD_BASE_Y + AWARD_INTERIOR_PADDING;
+
+	// for each award
+	$.each(AWARDS, function(index, award) {
+		// add a label
+		var awardLabel = svg.append('text')
+							.attr('class', 'award-text')
+							.attr('x', AWARD_BASE_X)
+							.attr('y', yAward)
+							.text(award.name + ':');
+
+		// adjust label backwards such that colons line up
+		awardLabel.attr('x', awardLabel.attr('x') - $(awardLabel[0][0]).width());
+
+		// for each year
+		$.each(pitcherData.records, function(index, record) {
+			var isWon = record[award.key];
+
+			// draw a circle if the award is won, otherwise a dot
+			// TODO: turn these into appropriate icons
+			svg.append('circle')
+				.attr('cx', yearScale(record.year))
+				.attr('cy', yAward - AWARD_SIZE / 3)
+				.attr('r', isWon ? AWARD_RADIUS : 1)
+		});
+
+		// update yAward for the next award
+		yAward += AWARD_SIZE + AWARD_INTERIOR_PADDING;
+	});
 
 });
