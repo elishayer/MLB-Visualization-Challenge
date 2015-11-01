@@ -1,4 +1,4 @@
-/* main.js
+/* visualize.js
  * Eli Shayer
  * -------
  * The current JavaScript file for the SSAC entry to the
@@ -62,6 +62,10 @@ var AWARD_BASE_X = CHART_LEFT_PADDING - 5;
 var AWARD_SIZE = 10;
 var AWARD_INTERIOR_PADDING = 2;
 var AWARD_RADIUS = 3;
+
+// Legend constants
+var LEGEND_WIDTH = 200;
+var LEGEND_HEIGHT = 250;
 
 // ======================================== Visualization
 
@@ -275,5 +279,26 @@ $.each(pitcherDataProcessed, function(index, pitcherData) {
 		// update yAward for the next award
 		yAward += AWARD_SIZE + AWARD_INTERIOR_PADDING;
 	});
-
 });
+
+// ======================================== Legend
+// create an svg for the legend
+var legend = d3.select('body')
+				.append('svg')
+				.attr('width', LEGEND_WIDTH)
+				.attr('height', LEGEND_HEIGHT);
+
+// legend title
+var legendTitle = legend.append('text')
+						.attr('class', 'legend-title')
+						.attr('x', 0)
+						.attr('y', 20)
+						.text('Legend');
+
+// center the legend title
+legendTitle.attr('x', (LEGEND_WIDTH - $(legendTitle[0][0]).width()) / 2);
+
+// RA9 WAR
+// FIP WAR
+// Stat champ
+// Award
