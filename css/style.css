@@ -45,10 +45,25 @@ svg {
 .champ-note {
     font-family: sans-serif;
     font-size: 10px; /* If changed, make corresponding change to js constant */
+    fill: #ffd700;
 }
 
 /* year lines */
 .year-line {
     stroke: #222222;
     stroke-width: 1px;
+}
+
+/* Career WAR text */
+.war-text {
+    font-family: sans-serif;
+    font-size: 10px;
+}
+
+.fip-war {
+    fill: #0000ff;
+}
+
+.ra9-war {
+    fill: #ff0000;
 }

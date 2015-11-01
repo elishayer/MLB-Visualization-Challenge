@@ -10,10 +10,10 @@
 // ---------------------------------------- Constants
 
 // SVG size
-var WIDTH = 400;
+var WIDTH = 500;
 var HEIGHT = 200;
 
-// padding values
+// chart padding values
 var CHART_BOTTOM_PADDING = 40;
 var CHART_TOP_PADDING = 30;
 var CHART_LEFT_PADDING = 40;
@@ -41,6 +41,12 @@ var CHAMP_INTERIOR_PADDING = 1;
 
 // champion stats
 var CHAMP_STATS = ['W', 'ERA', 'CG', 'SHO', 'IP', 'SO', 'FIP', 'WHIP'];
+
+// WAR note attributes
+var WAR_SIZE = 10;
+var WAR_RIGHT_PADDING = 80;
+var WAR_TOP_PADDING = 5;
+var WAR_INTERIOR_PADDING = 3;
 
 // ---------------------------------------- Visualization
 
@@ -190,4 +196,23 @@ $.each(pitcherDataProcessed, function(index, pitcherData) {
 			.attr('x2', yearScale(record.year))
 			.attr('y2', warScale(Math.max(record.WARra9, record.WARfip)));
 	});
+
+	// -------------------- Career WAR totals
+	// helper function to get career WAR of either type
+	function getCareerWar(records, type) {
+		return Math.round(d3.sum(records, function(d) { return d[type]; }) * 10) / 10;
+	}
+
+	svg.append('text')
+		.attr('class', 'war-text ra9-war')
+		.attr('x', WIDTH - WAR_RIGHT_PADDING)
+		.attr('y', WAR_TOP_PADDING + WAR_SIZE)
+		.text('RA9 WAR: ' + getCareerWar(pitcherData.records, 'WARra9'));
+
+	svg.append('text')
+		.attr('class', 'war-text fip-war')
+		.attr('x', WIDTH - WAR_RIGHT_PADDING)
+		.attr('y', WAR_TOP_PADDING + 2 * WAR_SIZE + WAR_INTERIOR_PADDING)
+		.text('FIP WAR: ' + getCareerWar(pitcherData.records, 'WARfip'));
+
 });
