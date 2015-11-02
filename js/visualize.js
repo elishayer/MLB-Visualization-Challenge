@@ -10,13 +10,13 @@
 // ======================================== Constants
 
 // Chart SVG size
-var CHART_WIDTH = 500;
+var CHART_WIDTH = 450;
 var CHART_HEIGHT = 250;
 
 // chart padding values
 var CHART_BOTTOM_PADDING = 100;
 var CHART_TOP_PADDING = 30;
-var CHART_LEFT_PADDING = 150;
+var CHART_LEFT_PADDING = 130;
 var CHART_RIGHT_PADDING = 20;
 
 // approximate number of ticks on the WAR axis
@@ -32,7 +32,7 @@ var RA9_WAR_FILL = 'rgba(256, 0, 0, 0.75)';
 // Text sizing
 var CHART_TITLE_SIZE = 20; // set in the .chart-title class
 var AXIS_TITLE_SIZE = 15;  // set in the .axis-title class
-var CHAMP_SIZE = 10;       // set in the .champ-note class
+var CHAMP_SIZE = 8;       // set in the .champ-note class
 
 // Text padding
 var AXIS_BOTTOM_PADDING = 20; // accounts for axis size and spacing
@@ -51,7 +51,7 @@ var WAR_INTERIOR_PADDING = 3;
 // image location and size
 var IMAGE_X = 10;
 var IMAGE_Y = 10;
-var IMAGE_WIDTH = 100;
+var IMAGE_WIDTH = 80;
 var IMAGE_HEIGHT = 100;
 
 // Award names and specifications
@@ -67,6 +67,27 @@ var AWARD_RADIUS = 3;
 var LEGEND_WIDTH = 200;
 var LEGEND_HEIGHT = 250;
 
+// Polygon SVG size
+var POLY_WIDTH = 200;
+var POLY_HEIGHT = 250;
+
+// Polygon parameters
+var POLY_SIDES = 6;
+var POLY_RADIUS_CHANGE = 10;
+var NUM_POLY = 10;
+var POLY_AVERAGE = Math.round(NUM_POLY / 2);
+
+// Polygon colors and stroke width
+var POLY_COLOR_DEFAULT = '#000000'; // black
+var POLY_COLOR_AVERAGE = '#0000ff'; // blue
+var POLY_COLOR_LEADER = '#ff0000';  // red
+
+var POLY_STROKE_DEFAULT = 1;
+var POLY_STROKE_THICK = 2;
+
+// Polygon stats
+var POLY_STATS_BASIC = []
+
 // ======================================== Visualization
 
 // -------------------- WAR Scale
@@ -77,7 +98,7 @@ var warScale = d3.scale.linear()
 				 	// the highest of all WARs of all pitchers
 				 	return d3.max(pitcherData.records, function(d) {
 				 		// the highest of all WARs for all years, and higher of RA9/FIP
-				 		return d.WARfip > d.WARra9 ? d.WARfip : d.WARra9;
+				 		return Math.max(d.WARfip, d.WARra9);
 				 	})
 				 })])
 				 .range([CHART_HEIGHT - CHART_BOTTOM_PADDING, CHART_TOP_PADDING]);
@@ -279,6 +300,56 @@ $.each(pitcherDataProcessed, function(index, pitcherData) {
 		// update yAward for the next award
 		yAward += AWARD_SIZE + AWARD_INTERIOR_PADDING;
 	});
+
+	// ======================================== Polygon
+	// create a svg for the polygon
+	var polySvg = d3.select('body')
+				.append('svg')
+				.attr('width', POLY_WIDTH)
+				.attr('height', POLY_HEIGHT);
+
+	// helper function to add a point to a path
+	function pathPt(cx, cy, radius, angle) {
+		return 'L' + (cx + radius * Math.cos(angle)) + ',' + (cy + radius * Math.sin(angle));
+	}
+
+	// helper function for a SVG polygon path
+	function polygonPath(sides, cx, cy, radius) {
+		var path = '';
+		// radians per side given the number of sides
+		var radianPerSide = 2 * Math.PI / sides;
+
+		// the current angle, negative so that
+		var angle = -Math.PI / 2;
+		for (var i = 0; i < sides; i++) {
+			path += pathPt(cx, cy, radius, angle);
+			angle += radianPerSide;
+		}
+		return 'M' + path.substring(1) + 'Z';
+	}
+
+	// helper function to draw a polygon
+	function drawPolygon(sides, cx, cy, radius, color, strokeWidth) {
+		polySvg.append('path')
+			.attr('d', polygonPath(sides, cx, cy, radius))
+			.attr('stroke', color)
+			.attr('stroke-width', strokeWidth)
+			.attr('fill', 'none')
+	}
+
+	// helper function to form skill polygon scales
+
+
+	// draw the polygons
+	for (var p = 0; p <= NUM_POLY; p++) {
+		var color = POLY_COLOR_DEFAULT;
+		var strokeWidth = POLY_STROKE_DEFAULT;
+		if (p === NUM_POLY || p === NUM_POLY / 2) {
+			color = (p === NUM_POLY ? POLY_COLOR_LEADER : POLY_COLOR_AVERAGE);
+			strokeWidth = POLY_STROKE_THICK;
+		}
+		drawPolygon(POLY_SIDES, POLY_WIDTH / 2, POLY_HEIGHT / 2, p * POLY_RADIUS_CHANGE, color, strokeWidth);
+	}
 });
 
 // ======================================== Legend
@@ -302,3 +373,6 @@ legendTitle.attr('x', (LEGEND_WIDTH - $(legendTitle[0][0]).width()) / 2);
 // FIP WAR
 // Stat champ
 // Award
+
+
+
