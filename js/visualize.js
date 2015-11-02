@@ -23,7 +23,7 @@ var CHART_RIGHT_PADDING = 20;
 var WAR_TICKS = 7;
 
 // line width, color, and fill
-var LINE_WIDTH = 0;
+var LINE_WIDTH = 2;
 var FIP_WAR_COLOR = '#0000ff';
 var RA9_WAR_COLOR = '#ff0000';
 var FIP_WAR_FILL = 'rgba(0, 0, 256, 0.75)';
@@ -32,7 +32,7 @@ var RA9_WAR_FILL = 'rgba(256, 0, 0, 0.75)';
 // Text sizing
 var CHART_TITLE_SIZE = 20; // set in the .chart-title class
 var AXIS_TITLE_SIZE = 15;  // set in the .axis-title class
-var CHAMP_SIZE = 8;       // set in the .champ-note class
+var CHAMP_SIZE = 8;        // set in the .champ-note class
 
 // Text padding
 var AXIS_BOTTOM_PADDING = 20; // accounts for axis size and spacing
@@ -90,7 +90,7 @@ var POLY_STATS_BASIC = ['W', 'ERA', 'AVG', 'SO', 'IP', 'FP'];
 var POLY_STATS_ADV = ['KBB', 'HR9', 'BABIP', 'FIP', 'TBF', 'TZ'];
 
 var POLY_SKILLS_TEST = [{name: 'Wins', key: 'W'}, {name: 'ERA', key: 'ERA'}, 
-	{name: 'Strikeouts', key: 'SO'}, {name: 'Innings Pitched', key: 'IP'},
+	{name: 'Strikeouts', key: 'SO'}, {name: 'IP', key: 'IP'},
 	{name: 'FIP', key: 'FIP'}, {name: 'HR/9', key: 'HR9'}];
 
 // ======================================== Visualization
@@ -132,7 +132,7 @@ $.each(pitcherDataProcessed, function(index, pitcherData) {
 		var line = d3.svg.line().x(function(d) { return yearScale(d.year); })
 								.y(function(d) { return warScale(d[WAR]); })
 								.interpolate('linear')(pitcherData.records);
-
+/*
 		// complete the line
 		// add a point at the bottom right of the chart
 		line += 'L' + (CHART_WIDTH - CHART_RIGHT_PADDING) + ',' + (CHART_HEIGHT - CHART_BOTTOM_PADDING);
@@ -140,7 +140,7 @@ $.each(pitcherDataProcessed, function(index, pitcherData) {
 		line += 'L' + CHART_LEFT_PADDING + ',' + (CHART_HEIGHT - CHART_BOTTOM_PADDING);
 		// return to the first point in the d3-generated line
 		line += 'Z';
-
+*/
 		return line;
 	}
 
@@ -149,14 +149,14 @@ $.each(pitcherDataProcessed, function(index, pitcherData) {
 		.attr('d', warGraph('WARra9'))
 		.attr('stroke', RA9_WAR_COLOR)
 		.attr('stroke-width', LINE_WIDTH)
-		.attr('fill', RA9_WAR_FILL);
+		.attr('fill', 'none');
 
 	// draw FIP WAR line
 	svg.append('path')
 		.attr('d', warGraph('WARfip'))
 		.attr('stroke', FIP_WAR_COLOR)
-		.attr('stroke-width', LINE_WIDTH)
-		.attr('fill', FIP_WAR_FILL);
+		.attr('stroke-width', 2)
+		.attr('fill', 'none');
 
 	// -------------------- Axes
 	// horizontal year axis
@@ -237,17 +237,7 @@ $.each(pitcherDataProcessed, function(index, pitcherData) {
 				// adjust x position to center notes on the year
 				champNote.attr('x', champNote.attr('x') - $(champNote[0][0]).width() / 2);
 			}
-
 		});
-/*
-		// add a vertical line for each year
-		svg.append('line')
-			.attr('class', 'year-line')
-			.attr('x1', yearScale(record.year))
-			.attr('y1', warScale(Math.min(0, record.WARra9, record.WARfip)))
-			.attr('x2', yearScale(record.year))
-			.attr('y2', warScale(Math.max(record.WARra9, record.WARfip)));
-*/
 	});
 
 	// -------------------- Career WAR totals
@@ -384,6 +374,8 @@ $.each(pitcherDataProcessed, function(index, pitcherData) {
 			angle += dRadians;
 		});
 
+		// draw the skills polygon with the generate path
+		// TODO: constant the stroke width, color, fill
 		polySvg.append('path')
 				.attr('d', 'M' + path.substring(1) + 'Z')
 				.attr('stroke', 'black')

@@ -45,7 +45,7 @@ svg {
 .champ-note {
     font-family: sans-serif;
     font-size: 8px; /* If changed, make corresponding change to js constant */
-    fill: #ffd700;
+    fill: #000000;
 }
 
 /* year lines */
