@@ -10,7 +10,7 @@
 // ======================================== Constants
 
 // Chart SVG size
-var CHART_WIDTH = 450;
+var CHART_WIDTH = 400;
 var CHART_HEIGHT = 250;
 
 // chart padding values
@@ -68,12 +68,12 @@ var LEGEND_WIDTH = 200;
 var LEGEND_HEIGHT = 250;
 
 // Polygon SVG size
-var POLY_WIDTH = 200;
+var POLY_WIDTH = 250;
 var POLY_HEIGHT = 250;
 
 // Polygon parameters
 var POLY_SIDES = 6;
-var POLY_RADIUS_CHANGE = 10;
+var POLY_D_RADIUS = 10;
 var NUM_POLY = 10;
 var POLY_AVERAGE = Math.round(NUM_POLY / 2);
 
@@ -86,10 +86,16 @@ var POLY_STROKE_DEFAULT = 1;
 var POLY_STROKE_THICK = 2;
 
 // Polygon stats
-var POLY_STATS_BASIC = []
+var POLY_STATS_BASIC = ['W', 'ERA', 'AVG', 'SO', 'IP', 'FP'];
+var POLY_STATS_ADV = ['KBB', 'HR9', 'BABIP', 'FIP', 'TBF', 'TZ'];
+
+var POLY_SKILLS_TEST = [{name: 'Wins', key: 'W'}, {name: 'ERA', key: 'ERA'}, 
+	{name: 'Strikeouts', key: 'SO'}, {name: 'Innings Pitched', key: 'IP'},
+	{name: 'FIP', key: 'FIP'}, {name: 'HR/9', key: 'HR9'}];
 
 // ======================================== Visualization
 
+// ======================================== Chart
 // -------------------- WAR Scale
 // a scale for WAR from 0 to the highest WAR value
 // same scale is used for all pitchers to improve ability to compare
@@ -233,7 +239,7 @@ $.each(pitcherDataProcessed, function(index, pitcherData) {
 			}
 
 		});
-
+/*
 		// add a vertical line for each year
 		svg.append('line')
 			.attr('class', 'year-line')
@@ -241,6 +247,7 @@ $.each(pitcherDataProcessed, function(index, pitcherData) {
 			.attr('y1', warScale(Math.min(0, record.WARra9, record.WARfip)))
 			.attr('x2', yearScale(record.year))
 			.attr('y2', warScale(Math.max(record.WARra9, record.WARfip)));
+*/
 	});
 
 	// -------------------- Career WAR totals
@@ -308,39 +315,83 @@ $.each(pitcherDataProcessed, function(index, pitcherData) {
 				.attr('width', POLY_WIDTH)
 				.attr('height', POLY_HEIGHT);
 
+	// helper function to get x coordinate
+	function getX(radius, angle) {
+		return POLY_WIDTH / 2 + radius * Math.cos(angle);
+	}
+
+	// helper function to get y coordinate
+	function getY(radius, angle) {
+		return POLY_HEIGHT / 2 + radius * Math.sin(angle);
+	}
+
 	// helper function to add a point to a path
-	function pathPt(cx, cy, radius, angle) {
-		return 'L' + (cx + radius * Math.cos(angle)) + ',' + (cy + radius * Math.sin(angle));
+	function pathPt(radius, angle) {
+		return 'L' + getX(radius, angle) + ',' + getY(radius, angle);
 	}
 
 	// helper function for a SVG polygon path
-	function polygonPath(sides, cx, cy, radius) {
+	function polygonPath(sides, radius) {
 		var path = '';
 		// radians per side given the number of sides
-		var radianPerSide = 2 * Math.PI / sides;
+		var dRadians = 2 * Math.PI / sides;
 
 		// the current angle, negative so that
 		var angle = -Math.PI / 2;
 		for (var i = 0; i < sides; i++) {
-			path += pathPt(cx, cy, radius, angle);
-			angle += radianPerSide;
+			path += pathPt(radius, angle);
+			angle += dRadians;
 		}
 		return 'M' + path.substring(1) + 'Z';
 	}
 
 	// helper function to draw a polygon
-	function drawPolygon(sides, cx, cy, radius, color, strokeWidth) {
+	function drawRegularPolygon(sides, radius, color, strokeWidth) {
 		polySvg.append('path')
-			.attr('d', polygonPath(sides, cx, cy, radius))
-			.attr('stroke', color)
-			.attr('stroke-width', strokeWidth)
-			.attr('fill', 'none')
+				.attr('d', polygonPath(sides, radius))
+				.attr('stroke', color)
+				.attr('stroke-width', strokeWidth)
+				.attr('fill', 'none');
 	}
 
-	// helper function to form skill polygon scales
+	// helper function to draw a skill polygon
+	function drawSkillPolygon(skills, record) {
+		var path = '';
+		var dRadians = 2 * Math.PI / POLY_SIDES;
 
+		// straight upwards
+		var angle = -Math.PI / 2;
 
-	// draw the polygons
+		// maximum radius, to edge of polygon
+		var radius = NUM_POLY * POLY_D_RADIUS;
+
+		$.each(skills, function(index, skill) {
+			var scale = d3.scale.linear()
+								.domain([record[skill.key + 'mean'], record[skill.key + 'best']])
+								.range([radius / 2, radius]);
+
+			// insure that no radii are negative
+			path += pathPt(Math.max(scale(record[skill.key]), 0), angle);
+
+			// add skill labels
+			polySvg.append('text')
+					.attr('class', 'poly-label')
+					.attr('x', getX(radius, angle))
+					.attr('y', getY(radius, angle))
+					.text(skill.name);
+
+			// update the angle for the next skill
+			angle += dRadians;
+		});
+
+		polySvg.append('path')
+				.attr('d', 'M' + path.substring(1) + 'Z')
+				.attr('stroke', 'black')
+				.attr('stroke-width', 2)
+				.attr('fill', 'rgba(0, 0, 0, 0.5)');
+	}
+
+	// draw the regular polygons
 	for (var p = 0; p <= NUM_POLY; p++) {
 		var color = POLY_COLOR_DEFAULT;
 		var strokeWidth = POLY_STROKE_DEFAULT;
@@ -348,8 +399,12 @@ $.each(pitcherDataProcessed, function(index, pitcherData) {
 			color = (p === NUM_POLY ? POLY_COLOR_LEADER : POLY_COLOR_AVERAGE);
 			strokeWidth = POLY_STROKE_THICK;
 		}
-		drawPolygon(POLY_SIDES, POLY_WIDTH / 2, POLY_HEIGHT / 2, p * POLY_RADIUS_CHANGE, color, strokeWidth);
+		drawRegularPolygon(POLY_SIDES, p * POLY_D_RADIUS, color, strokeWidth);
 	}
+
+	// draw the skill polygon using test categories and first year of data
+	drawSkillPolygon(POLY_SKILLS_TEST, pitcherData.records[0]);
+
 });
 
 // ======================================== Legend
