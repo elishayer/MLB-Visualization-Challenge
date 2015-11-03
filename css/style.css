@@ -68,6 +68,18 @@ svg {
     fill: #ff0000;
 }
 
+.bat-war {
+    fill: #ff0000;
+}
+
+.run-war {
+    fill: #00ff00;
+}
+
+.def-war {
+    fill: #0000ff;
+}
+
 /* Award text */
 .award-text {
     font-family: sans-serif;
@@ -77,5 +89,11 @@ svg {
 /* legend styles */
 .legend-title {
     font-family: sans-serif;
-    font-size: 20px;
+    font-size: 20px; /* If changed, make corresponding change to js constant */
+}
+
+/* Polygon styles */
+.polygon-label {
+    font-family: sans-serif;
+    font-size: 15px; /* If changed, make corresponding change to js constant */
 }
