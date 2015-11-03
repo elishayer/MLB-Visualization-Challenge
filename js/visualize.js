@@ -10,7 +10,7 @@
 // ======================================== Constants
 
 // Chart SVG size
-var CHART_WIDTH = 450;
+var CHART_WIDTH = 550;
 var CHART_HEIGHT = 250;
 
 // chart padding values
@@ -39,12 +39,6 @@ var PITCHER_WAR = [
 ];
 var HITTER_WAR = [
 	{
-		name: 'Hit WAR',
-		key: 'Value Batting',
-		class: 'bat-war',
-		color: '#ff0000'
-	},
-	{
 		name: 'Run WAR',
 		key: 'Value Running',
 		class: 'run-war',
@@ -55,7 +49,13 @@ var HITTER_WAR = [
 		key: 'Value Fielding',
 		class: 'def-war',
 		color: '#0000ff'
-	}
+	},
+	{
+		name: 'Hit WAR',
+		key: 'Value Batting',
+		class: 'bat-war',
+		color: '#ff0000'
+	},
 ];
 
 // line width, color, and fill
@@ -148,6 +148,9 @@ var POLY_LABEL_SIZE = 15;    // set in the .polygon-label class
 
 var ZERO_EPSILON = 0.001 // zero with a bound
 
+// variable for later transitions of skill polygons
+var skillPolygons = {};
+
 // ======================================== Visualization Function
 function visualizeCareers(processedData, war, champ, awards, basic, advanced, isStacked) {
 	// ======================================== Chart
@@ -197,19 +200,31 @@ function visualizeCareers(processedData, war, champ, awards, basic, advanced, is
 
 		// -------------------- Line graphs
 		// returns the results of a line function for both types of WAR
-		function warGraph(key) {
+		function warGraph(warTypeArray) {
 			// get the simple line -- time plot, no shading
 			return d3.svg.line()
 							.x(function(d) { return yearScale(d.year); })
-							.y(function(d) { return warScale(d[key]); })
-							.interpolate('basis')(playerData.records);
+							.y(function(d) {
+								if (isStacked) {
+									return warScale(d3.sum(warTypeArray, function(war) {
+										return d[war];
+									}));
+								} else {
+									return warScale(d[warTypeArray[warTypeArray.length - 1]]);
+								}
+							})
+							.interpolate('linear')(playerData.records);
 		}
 
+		// an array of all WAR types up to this point
+		// used differently depending on whether isStacked is true or false
+
 		// draw a line on the chart for each type of war
-		// TODO: make them stacked in the case of isStacked being true
+		var warArray = [];
 		$.each(war, function(index, warType) {
+			warArray.push(warType.key);
 			svg.append('path')
-				.attr('d', warGraph(warType.key))
+				.attr('d', warGraph(warArray))
 				.attr('stroke', warType.color)
 				.attr('stroke-width', LINE_WIDTH)
 				.attr('fill', 'none');
@@ -465,13 +480,51 @@ function visualizeCareers(processedData, war, champ, awards, basic, advanced, is
 				}
 			}
 
-			// draw the skills polygon with the generate path
-			polySvg.append('path')
-					.attr('d', 'M' + path.substring(1) + 'Z')
-					.attr('stroke', POLY_SKILL_STROKE_COLOR)
-					.attr('stroke-width', POLY_SKILL_STROKE_WIDTH)
-					.attr('fill', POLY_SKILL_FILL_COLOR);
+			// team colors, sourced from http://teamcolors.arc90.com/
+			function getTeamColor(team) {
+				switch(team) {
+					case 'BOS': return '#c60c30';
+					case 'CHC': return '#003279';
+					case 'CHW': return '#c0c0c0';
+					case 'CIN': return '#c6011f';
+					case 'CLV': return '#d30335';
+					case 'DET': return '#001742';
+					case 'HOU': return '#072854';
+					case 'LAA': return '#b71234';
+					case 'LAD': return '#083c6b';
+					case 'NYM': return '#002c77';
+					case 'NYY': return '#1c2841';
+					case 'PHI': return '#ba0c2f';
+					case 'PIT': return '#fdb829';
+					case 'SFG': return '#f2552c';
+					case 'STL': return '#c41e3a';
+					case 'TOR': return '#003da5';
+					case 'WSH': return '#ba122b';
+				}
+			}
+
+			// draw the polygon and add the background image 
+			skillPolygons[playerData.name] = {
+				// TODO: convert to career by default
+				// draw the skills polygon with color specified by the teams
+				poly: polySvg.append('path')
+								.attr('d', 'M' + path.substring(1) + 'Z')
+								.attr('stroke-width', 0)
+								.attr('fill', getTeamColor(playerData.records[6].team))
+								.attr('opacity', 0.75),
+				// draw the polygon team image TODO: get suitable images
+				image: 		polySvg.append('image')
+									.attr('xlink:href', './images/teams/' + playerData.records[6].team.substring(0, 3) + '.gif')
+									.attr('x', POLY_WIDTH / 2 - 50)
+									.attr('y', POLY_HEIGHT / 2 - 50)
+									.attr('width', 100)
+									.attr('height', 100)
+									.attr('opacity', 0.25)
+			};
 		}
+
+		// add a key for the player to store the skill polygon for later access
+		skillPolygons[playerData.name] = {};
 
 		// draw the regular polygons
 		for (var p = 0; p <= NUM_POLY; p++) {
@@ -486,6 +539,9 @@ function visualizeCareers(processedData, war, champ, awards, basic, advanced, is
 
 		// draw the skill polygon using test categories and first year of data
 		drawSkillPolygon(advanced, playerData.records[6]);
+/*
+
+*/
 
 	});
 
@@ -512,5 +568,5 @@ function visualizeCareers(processedData, war, champ, awards, basic, advanced, is
 	// Award
 }
 
-//visualizeCareers(processed.pitchers, PITCHER_WAR, PITCHER_CHAMP_STATS, PITCHER_AWARDS, PITCHER_STATS_BASIC, PITCHER_STATS_ADV, false);
-visualizeCareers(processed.hitters, HITTER_WAR, HITTER_CHAMP_STATS, HITTER_AWARDS, HITTER_STATS_BASIC, HITTER_STATS_ADV, false);
+visualizeCareers(processed.pitchers, PITCHER_WAR, PITCHER_CHAMP_STATS, PITCHER_AWARDS, PITCHER_STATS_BASIC, PITCHER_STATS_ADV, false);
+visualizeCareers(processed.hitters, HITTER_WAR, HITTER_CHAMP_STATS, HITTER_AWARDS, HITTER_STATS_BASIC, HITTER_STATS_ADV, true);
