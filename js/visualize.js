@@ -14,13 +14,19 @@ var CHART_WIDTH = 525;
 var CHART_HEIGHT = 250;
 
 // chart padding values
-var CHART_BOTTOM_PADDING = 100;
-var CHART_TOP_PADDING = 30;
+var CHART_BOTTOM_PADDING = 55;
+var CHART_TOP_PADDING = 10;
 var CHART_LEFT_PADDING = 130;
 var CHART_RIGHT_PADDING = 20;
 
 // approximate number of ticks on the WAR axis
-var WAR_TICKS = 7;
+var WAR_TICKS = 3;
+
+// maximum WAR
+var MAX_WAR = 15;
+
+// dashed line style
+var DASHED_STYLE = {"stroke-dasharray": ("3, 3")};
 
 // WAR types and styles
 var PITCHER_WAR = [
@@ -34,7 +40,8 @@ var PITCHER_WAR = [
 		name: 'FIP WAR',
 		key: 'WARfip',
 		class: 'fip-war',
-		color: '#0000ff'
+		color: '#551a8b',
+		style: DASHED_STYLE
 	}
 ];
 var HITTER_WAR = [
@@ -42,19 +49,19 @@ var HITTER_WAR = [
 		name: 'Run WAR',
 		key: 'Value Running',
 		class: 'run-war',
-		color: '#00ff00'
+		color: '#eee8aa'
 	},
 	{
 		name: 'Hit WAR',
 		key: 'Value Batting',
 		class: 'bat-war',
-		color: '#ff0000'
+		color: '#87cefa'
 	},
 	{
 		name: 'Def WAR',
 		key: 'Value Fielding',
 		class: 'def-war',
-		color: '#0000ff'
+		color: '#90ee90'
 	},
 ];
 
@@ -66,18 +73,15 @@ var FIP_WAR_FILL = 'rgba(0, 0, 256, 0.75)';
 var RA9_WAR_FILL = 'rgba(256, 0, 0, 0.75)';
 
 // Text sizing
-var CHART_TITLE_SIZE = 20; // set in the .chart-title class
 var AXIS_TITLE_SIZE = 15;  // set in the .axis-title class
-var CHAMP_SIZE = 8;        // set in the .champ-note class
+var CHAMP_SIZE = 7;        // set in the .champ-note class
 
 // Text padding
-var AXIS_BOTTOM_PADDING = 20; // accounts for axis size and spacing
 var AXIS_LEFT_PADDING = 25;   // accounts for axis size and spacing
-var CHAMP_INTERIOR_PADDING = 2;
 
 // champion stats
-var PITCHER_CHAMP_STATS = ['W', 'ERA', 'CG', 'SHO', 'IP', 'SO', 'FIP', 'WHIP'];
-var HITTER_CHAMP_STATS = ['AVG', 'HR', 'RBI', 'R', 'SB', 'FP', 'OBP', 'SLG'];
+var PITCHER_CHAMP_STATS = ['W', 'ERA', 'SO', 'IP', 'SHO', 'FIP'];
+var HITTER_CHAMP_STATS = ['HR', 'AVG', 'RBI', 'SB', 'OBP', 'R'];
 
 // WAR note attributes
 var WAR_SIZE = 10;
@@ -92,15 +96,16 @@ var IMAGE_WIDTH = 80;
 var IMAGE_HEIGHT = 100;
 
 // Award names and specifications
-var PITCHER_AWARDS = [{name: 'All Star', key: 'as'}, {name: 'World Series', key: 'ws'},
-	{name: 'Gold Glove', key: 'gg'}, {name: 'MVP', key: 'mvp'}, {name: 'Cy Young', key: 'cy'}];
-var HITTER_AWARDS = [{name: 'All Star', key: 'as'}, {name: 'World Series', key: 'ws'},
-	{name: 'Gold Glove', key: 'gg'}, {name: 'MVP', key: 'mvp'}];
-var AWARD_BASE_Y = CHART_HEIGHT - CHART_BOTTOM_PADDING + AXIS_TITLE_SIZE + AXIS_BOTTOM_PADDING + 10;
+var PITCHER_AWARDS = [{name: 'AS', key: 'as'}, {name: 'CY', key: 'cy'},
+	{name: 'MVP', key: 'mvp'}, {name: 'WS', key: 'ws'}];
+var HITTER_AWARDS = [{name: 'GG', key: 'gg'}, {name: 'AS', key: 'as'},
+	{name: 'MVP', key: 'mvp'}, {name: 'WS', key: 'ws'}];
+var AWARD_BASE_Y = CHART_HEIGHT - CHART_BOTTOM_PADDING + 15;
 var AWARD_BASE_X = CHART_LEFT_PADDING - 5;
 var AWARD_SIZE = 10;
 var AWARD_INTERIOR_PADDING = 2;
 var AWARD_RADIUS = 3;
+var WS_ICON_SIZE = 35;
 
 // Legend constants
 var LEGEND_WIDTH = 200;
@@ -177,7 +182,7 @@ var navCol = mainRow.append('div').attr('class', 'col-xs-2').attr('id', 'nav');
 
 
 // ======================================== Visualization Function
-function visualizeCareers(processedData, playerType, war, champ, awards, basic, advanced, isStacked) {
+function visualizeCareers(processedData, playerType, war, champ, age, awards, basic, advanced, isStacked) {
 	// ======================================== Category
 	// append a header naming the player category
 	visCol.append('h2')
@@ -190,30 +195,14 @@ function visualizeCareers(processedData, playerType, war, champ, awards, basic, 
 	// a scale for WAR from 0 to the highest WAR value
 	// same scale is used for all players to improve ability to compare
 	var warScale = d3.scale.linear()
-					 .domain([0, d3.max(processedData, function(playerData) {
-					 	// the highest of all WARs of all players
-					 	return d3.max(playerData.records, function(record) {
-					 		// if stacked, sum over all types of WAR 
-					 		if (isStacked) {
-					 			var sum = 0;
-					 			$.each(war, function(index, warType) {
-					 				sum += record[warType.key];
-					 			});
-					 			return sum;
-					 		// if not stacked, return the highest of all types
-					 		} else {
-					 			var max = 0; // assumes max is greater than 0, known to be true
-					 			$.each(war, function(index, warType) {
-					 				if (record[warType.key] > max) {
-					 					max = record[warType.key];
-					 				}
-					 			});
-					 			return max;
-					 		}
-					 	})
-					 })])
+					 .domain([0, MAX_WAR])
 					 .range([CHART_HEIGHT - CHART_BOTTOM_PADDING, CHART_TOP_PADDING]);
 
+	// -------------------- Year Scale
+	// a scale for the years spanning the set of ages for the type of player
+	var ageScale = d3.scale.linear()
+					  .domain([age.min, age.max])
+					  .range([CHART_LEFT_PADDING, CHART_WIDTH - CHART_RIGHT_PADDING]);
 	// create a graph for each player
 	$.each(processedData, function(index, playerData) {
 		// initalize a bootsrap row to hold all the relevant elements
@@ -229,24 +218,17 @@ function visualizeCareers(processedData, playerType, war, champ, awards, basic, 
 		// -------------------- Initialization
 		// initialize a SVG container, retain for easier future access
 		var svg = row.append('div')
-						.attr('class', 'col-xs-7')
+						.attr('class', 'col-xs-12 col-sm-7')
 						.append('svg')
 						.attr('width', CHART_WIDTH)
 						.attr('height', CHART_HEIGHT);
-
-		// -------------------- Year Scale
-		// a scale for the years spanning the full set of years
-		var yearScale = d3.scale.linear()
-						  .domain([d3.min(playerData.records, function(d) { return d.year; }),
-						  		d3.max(playerData.records, function(d) { return d.year; })])
-						  .range([CHART_LEFT_PADDING, CHART_WIDTH - CHART_RIGHT_PADDING]);
 
 		// -------------------- Line graphs
 		// returns the results of a line function for both types of WAR
 		function warGraph(warArray, minIndex) {
 			// get the simple line -- time plot, no shading
 			var path =  d3.svg.line()
-								.x(function(d) { return yearScale(d.year); })
+								.x(function(d) { return ageScale(d.age); })
 								.y(function(d) {
 									if (isStacked) {
 										return warScale(d3.sum(warArray, function(war, index) {
@@ -258,6 +240,20 @@ function visualizeCareers(processedData, playerType, war, champ, awards, basic, 
 								})
 								.interpolate('monotone')(playerData.records);
 			if (isStacked) {
+				// get the simple line -- time plot, no shading
+/*				var path =  d3.svg.line()
+									.x(function(d) { return age.max - ageScale(d.age); })
+									.y(function(d) {
+										if (isStacked) {
+											return warScale(d3.sum(warArray, function(war, index) {
+												return index >= minIndex ? d[war.key] : 0;
+											}));
+										} else {
+											return warScale(d[warArray[minIndex].key]);
+										}
+									})
+									.interpolate('monotone')(playerData.records);*/
+
 				// add a point at the bottom right of the chart
 				path += 'L' + (CHART_WIDTH - CHART_RIGHT_PADDING) + ',' + (CHART_HEIGHT - CHART_BOTTOM_PADDING);
 				// add a point at the bottom left of the chart
@@ -275,22 +271,56 @@ function visualizeCareers(processedData, playerType, war, champ, awards, basic, 
 
 		// draw a line on the chart for each type of war
 		$.each(war, function(index, warType) {
-			svg.append('path')
-				.attr('d', warGraph(war, index))
-				.attr('stroke', warType.color)
-				.attr('stroke-width', LINE_WIDTH)
-				.attr('fill', isStacked ? warType.color : 'none');
+			var path = svg.append('path')
+							.attr('d', warGraph(war, index))
+							.attr('stroke', warType.color)
+							.attr('stroke-width', LINE_WIDTH)
+							.attr('fill', isStacked ? warType.color : 'none');
+
+			// apply a style if it exists
+			if (warType.style) {
+				path.style(warType.style);
+			}
 		});
 
 		// -------------------- Axes
+		// helper function to get the year at a player's age
+		function yearAtAge(records, age) {
+			var year = null;
+			$.each(records, function(index, record) {
+				if (!year && record.age === age) {
+					year = record.year;
+				}
+			});
+			return year;
+		}
+
+		// helper function to get the player's age in a certain year
+		function ageAtYear(records, year) {
+			var age = null;
+			$.each(records, function(index, record) {
+				if (!age && record.year === year) {
+					age = record.age;
+				}
+			});
+			return age;
+		}
+
+		var yearScale = d3.scale.linear()
+						  .domain([playerData.minYear, playerData.maxYear])
+						  .range([ageScale(ageAtYear(playerData.records, playerData.minYear)),
+						  	ageScale(ageAtYear(playerData.records, playerData.maxYear))]);
+
 		// horizontal year axis
 		svg.append('g')
 			.attr('class', 'axis')
-			.attr('transform', 'translate(0,' + (CHART_HEIGHT - CHART_BOTTOM_PADDING) + ')')
+			.attr('transform', 'translate(0,' + (CHART_TOP_PADDING) + ')')
 			.call(d3.svg.axis()
 						.scale(yearScale)
 						.orient('bottom')
-						.ticks(playerData.records.length / 3) // every third year
+						.innerTickSize(0)
+						.outerTickSize(10)
+						.tickValues(2) // every third year // TODO: outer years
 						.tickFormat(d3.format('d')));
 
 		// vertical WAR axis
@@ -314,17 +344,6 @@ function visualizeCareers(processedData, playerType, war, champ, awards, basic, 
 				$(obj.node()).width() / 2 - -(padding ? padding : 0));
 		}
 
-		// horizontal year axis title
-		var yearAxisTitle = svg.append('text')
-								.attr('class', 'axis-title')
-								.attr('x', (CHART_WIDTH - CHART_RIGHT_PADDING + CHART_LEFT_PADDING) / 2)
-								.attr('y', CHART_HEIGHT - CHART_BOTTOM_PADDING +
-									AXIS_TITLE_SIZE + AXIS_BOTTOM_PADDING)
-								.text('Year');
-
-		// center the horizontal axis title
-		adjustObjLoc(yearAxisTitle);
-
 		// vertical WAR axis title
 		var warAxisTitle = svg.append('text')
 								.attr('class', 'axis-title vert-text')
@@ -335,27 +354,22 @@ function visualizeCareers(processedData, playerType, war, champ, awards, basic, 
 		// center the vertical axis title
 		adjustObjLoc(warAxisTitle);
 
-		// -------------------- Chart Title
-		var chartTitle = svg.append('text')
-							.attr('class', 'chart-title')
-							.attr('x', CHART_WIDTH / 2)
-							.attr('y', CHART_TITLE_SIZE)
-							.text('Career WAR Chart');
-
-		// center the title
-		adjustObjLoc(chartTitle);
-
 		// -------------------- Champ stats and year lines
 		$.each(playerData.records, function(index, record) {
 			// initial value of y -- the bottom of the graph
-			var y = warScale(0) - CHAMP_INTERIOR_PADDING;
+			var y;
+			if (playerType === 'pitchers') {
+				y = warScale(Math.min(record.WARra9, record.WARfip) / 2) + CHAMP_SIZE;
+			} else {
+				y = warScale((record['Value Batting'] + record['Value Fielding']) / 2);
+			}
 			$.each(champ, function(index, stat) {
 				// if the player was the champion of this stat for this year
 				if(record[stat + 'champ']) {
 					// add a note to indicate they were that stats' champion
 					var champNote = svg.append('text')
 										.attr('class', 'champ-note')
-										.attr('x', yearScale(record.year))
+										.attr('x', ageScale(record.age))
 										.attr('y', y)
 										.text(stat);
 
@@ -363,25 +377,9 @@ function visualizeCareers(processedData, playerType, war, champ, awards, basic, 
 					adjustObjLoc(champNote);
 
 					// adjust y for the next stat
-					y -= CHAMP_SIZE + CHAMP_INTERIOR_PADDING;
+					y += CHAMP_SIZE;
 				}
 			});
-		});
-
-		// -------------------- Career WAR totals
-		// helper function to get career WAR of either type
-		function getCareerWar(records, type) {
-			// rounding to the nearest tenth
-			return Math.round(d3.sum(records, function(d) { return d[type]; }) * 10) / 10;
-		}
-
-		var y = WAR_TOP_PADDING + WAR_SIZE;
-		$.each(war, function(index, warType) {
-			svg.append('text')
-				.attr('class', 'war-text ' + warType.class)
-				.attr('x', CHART_WIDTH - WAR_RIGHT_PADDING)
-				.attr('y', WAR_TOP_PADDING + WAR_SIZE + index * (WAR_SIZE + WAR_INTERIOR_PADDING))
-				.text(warType.name + ': ' + getCareerWar(playerData.records, warType.key));
 		});
 
 		// -------------------- Player images
@@ -397,28 +395,52 @@ function visualizeCareers(processedData, playerType, war, champ, awards, basic, 
 		var yAward = AWARD_BASE_Y + AWARD_INTERIOR_PADDING;
 
 		// for each award
-		$.each(awards, function(index, award) {
+		$.each(awards, function(awardIndex, award) {
 			// add a label
 			var awardLabel = svg.append('text')
 								.attr('class', 'award-text')
 								.attr('x', AWARD_BASE_X)
 								.attr('y', yAward)
-								.text(award.name + ':');
+								.text(award.name);
 
-			// adjust label backwards a full width (2 half-widths) to line up colons
+			// adjust label backwards a full width (2 half-widths) to line up the text
 			adjustObjLoc(awardLabel, false, 2);
 
 			// for each year
-			$.each(playerData.records, function(index, record) {
+			$.each(playerData.records, function(playerIndex, record) {
 				var isWon = record[award.key] && record[award.key] != 'n/a';
+				// add an icon corresponding to an award if won
+				if (isWon && awardIndex != awards.length - 1) {
+					svg.append('image')
+						.attr('xlink:href', 'images/icons/' + award.key + '.png')
+						.attr('x', ageScale(record.age))
+						.attr('y', yAward - AWARD_SIZE + AWARD_INTERIOR_PADDING)
+						.attr('width', AWARD_SIZE)
+						.attr('height', AWARD_SIZE)
+				}
 
-				// draw a circle if the award is won, otherwise a dot
-				// TODO: turn these into appropriate icons
-				svg.append('circle')
-					.attr('cx', yearScale(record.year))
-					.attr('cy', yAward - AWARD_SIZE / 3)
-					.attr('r', isWon ? AWARD_RADIUS : 1)
+				if (award.key === 'ws' && isWon) {
+					svg.append('image')
+						.attr('xlink:href', 'images/icons/' + award.key + '.png')
+						.attr('x', ageScale(record.age) - WS_ICON_SIZE / 2)
+						.attr('y', warScale(playerType ===  'pitcher' ? Math.max(record.WARra9, record.WARfip) :
+							record['Value Batting'] + record['Value Fielding'] + record['Value Running'])
+							- WS_ICON_SIZE)
+						.attr('width', WS_ICON_SIZE)
+						.attr('height', WS_ICON_SIZE)
+				}
 			});
+
+			// add in a separating line on top for all but the last award
+			if (index !== awards.length - 1) {
+				svg.append('line')
+					.attr('x1', ageScale(age.min))
+					.attr('y1', yAward + AWARD_INTERIOR_PADDING)
+					.attr('x2', ageScale(age.max))
+					.attr('y2', yAward + AWARD_INTERIOR_PADDING)
+					.style({"stroke-dasharray": ("3, 3")})
+
+			}
 
 			// update yAward for the next award
 			yAward += AWARD_SIZE + AWARD_INTERIOR_PADDING;
@@ -427,7 +449,7 @@ function visualizeCareers(processedData, playerType, war, champ, awards, basic, 
 		// ======================================== Polygon
 		// create a svg for the polygon
 		var polySvg = row.append('div')
-							.attr('class', 'col-xs-3')
+							.attr('class', 'col-xs-8 col-sm-3')
 							.append('svg')
 							.attr('width', POLY_WIDTH)
 							.attr('height', POLY_HEIGHT);
@@ -506,7 +528,7 @@ function visualizeCareers(processedData, playerType, war, champ, awards, basic, 
 		}
 
 		// helper function to draw a skill polygon
-		function drawSkillPolygon(skills, records) {
+		function drawCareerSkillPolygon(skills, records) {
 			var path = '';
 			var dRadians = 2 * Math.PI / POLY_SIDES;
 
@@ -515,12 +537,9 @@ function visualizeCareers(processedData, playerType, war, champ, awards, basic, 
 
 			// maximum radius, to edge of polygon
 			var maxR = NUM_POLY * POLY_D_RADIUS;
-//			console.log(records[0].name);
+
+			// for each skill
 			$.each(skills, function(index, skill) {
-//				console.log(skill);
-//				console.log([d3.mean(records, function(d) { return d[skill.key + 'mean']; }),
-//										d3.mean(records, function(d) { return d[skill.key + 'best']; })]);
-//				console.log(d3.mean(records, function(d) { return d[skill.key]; }));
 				var scale = d3.scale.linear()
 									// average all means and bests in the career years
 									.domain([d3.mean(records, function(d) { return d[skill.key + 'mean']; }),
@@ -546,7 +565,6 @@ function visualizeCareers(processedData, playerType, war, champ, awards, basic, 
 			});
 
 			// draw the skills polygon with color specified by the teams
-			// TODO: convert to career by default
 			return polySvg.append('path')
 							.attr('d', 'M' + path.substring(1) + 'Z')
 							.attr('stroke', POLY_SKILL_STROKE)
@@ -591,12 +609,16 @@ function visualizeCareers(processedData, playerType, war, champ, awards, basic, 
 			}
 
 			// draw the skill polygon
-			skillPolygons[name].poly = drawSkillPolygon(basic, records);
+			skillPolygons[name].poly = drawCareerSkillPolygon(advanced, records);
 		}
 
 		// draw the polygon
-		// TODO: convert to career
+		// TODO: make flexible between single year, range, and career
 		drawPolygon(playerData.name, playerData.records);
+
+		// initialize a div to hold the interaction form
+		// export responsibility to make the form to the controller
+		row.append('div').attr('class', 'col-xs-4 col-sm-2 vis-form-wrapper');
 
 	});
 /*
@@ -625,9 +647,9 @@ function visualizeCareers(processedData, playerType, war, champ, awards, basic, 
 */
 }
 
-visualizeCareers(processed.pitchers, 'pitchers', PITCHER_WAR, PITCHER_CHAMP_STATS,
+visualizeCareers(processed.pitchers, 'pitchers', PITCHER_WAR, PITCHER_CHAMP_STATS, PITCHER_AGE_BOUNDS,
 	PITCHER_AWARDS, PITCHER_STATS_BASIC, PITCHER_STATS_ADV, false);
-visualizeCareers(processed.hitters, 'hitters', HITTER_WAR, HITTER_CHAMP_STATS,
+visualizeCareers(processed.hitters, 'hitters', HITTER_WAR, HITTER_CHAMP_STATS, HITTER_AGE_BOUNDS,
 	HITTER_AWARDS, HITTER_STATS_BASIC, HITTER_STATS_ADV, true);
 
 // ======================================== Navigation Column

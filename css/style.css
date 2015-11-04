@@ -23,6 +23,12 @@
     shape-rendering: crispEdges;
 }
 
+line {
+    fill: none;
+    stroke: black;
+    shape-rendering: crispEdges;
+}
+
 .axis text {
     font-family: sans-serif;
     font-size: 11px;
@@ -47,8 +53,9 @@
 
 /* Champion notes */
 .champ-note {
-    font-family: sans-serif;
-    font-size: 8px; /* If changed, make corresponding change to js constant */
+    font-family: courier;
+    font-weight: bold;
+    font-size: 7px; /* If changed, make corresponding change to js constant */
     fill: #000000;
 }
 
@@ -84,7 +91,7 @@
     fill: #0000ff;
 }
 
-/* Award text */
+/* Award styles */
 .award-text {
     font-family: sans-serif;
     font-size: 10px; /* If changed, make corresponding change to js constant */
@@ -103,7 +110,7 @@
 }
 
 .polygon-label {
-    font-family: sans-serif;
+    font-family: sans-serifspace;
     font-size: 15px; /* If changed, make corresponding change to js constant */
 }
 

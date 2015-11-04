@@ -1,12 +1,12 @@
-/* controller.js
+/* interaction.js
  * Eli Shayer
  * -------
- * The controller file for the SSAC entry to the 
+ * The interaction file for the SSAC entry to the 
  * majorleaguedatachallenge.com visualization contest.
  * Allows for easier transitions between viewing players
  */
 
-// ======================================== DOM Manipulation
+// ======================================== Players List
 // add a ul element to hold the list of players
 var playerList = navCol.append('ul').attr('class', 'players-list');
 
@@ -30,6 +30,45 @@ for (playerType in processed) {
 		createLinkLi(player.name, 'nav-player', player.id + '-li', player.id);
 	});
 }
+
+// ======================================== Visualization Manipulation Forms
+// radio options for the visualization forms
+var RADIO_OPTIONS = [
+	{
+		value: 'b',
+		label: 'Basic Stats'
+	},
+	{
+		value: 'a',
+		label: 'Advanced Stats'
+	}
+];
+
+// for each player's form-wrapper, create a form
+$.each($('.vis-form-wrapper'), function(index, formWrapper) {
+	// add a title to the form wrapper
+	$('<h4>').text('Interaction Form').appendTo(formWrapper);
+
+	// get the player id from the row id (parent of the formWrapper)
+	var playerId = $(formWrapper).parent().attr('id');
+
+	// for each radio option
+	$.each(RADIO_OPTIONS, function(index, option) {
+		// create a radio wrapper
+		var radioWrapper = $('<div>').addClass('radio').appendTo(formWrapper);
+		var label = $('<label>').appendTo(radioWrapper);
+		$('<input>').attr('type', 'radio').attr('value', option.value).attr('name', 'TODO').appendTo(label);
+		label.html(label.html() + option.label);
+	});
+
+	// add a seperator
+	$('<hr>').appendTo(formWrapper);
+});
+
+// ======================================== Form Event Listeners
+
+
+// ======================================== Player List Interaction
 
 // a buffer from the top of the screen when viewing players
 var BUFFER_TOP = 10;
@@ -111,7 +150,6 @@ $window.scroll(function () {
 
 					// if the current player is the viewed player
 					if ($player.offset().top + $player.outerHeight() > screenTop + BUFFER_VIEW) {
-						console.log(id);
 						// cache the id of the player in the ul list
 						var listId = "#" + id + "-li";
 

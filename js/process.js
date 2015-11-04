@@ -473,8 +473,30 @@ function getNameIndex(key, name) {
     return NOT_FOUND_SENTINEL;
 }
 
-// helper functions to process the data
-function processData(dataset, key) {
+// Age axis bounds
+var PITCHER_AGE_BOUNDS = {
+    min: 19,
+    max: 44
+}
+var HITTER_AGE_BOUNDS = {
+    min: 18,
+    max: 43
+}
+
+// helper function to find whether a record exists for a certain age
+function isAgeRecordContained(playerData, age) {
+    var ageRecordContained = false;
+    $.each(playerData.records, function(index, record) {
+        if (record.age === age) {
+            ageRecordContained = true;
+        }
+    });
+
+    return ageRecordContained;
+}
+
+// function to process the data
+function processData(dataset, key, ageBounds, emptyYear) {
     $.each(dataset, function(index, record) {
 
         // get the index of the player by name
@@ -515,26 +537,49 @@ function processData(dataset, key) {
             }
         }
     });
+/*
+    // add in zeroed data for all ages if no record exists
+    for (var i = 0; i < processed[key].length; i++) {
+        for (var age = ageBounds.min; age <= ageBounds.max; age++) {
+            if (!isAgeRecordContained(processed[key][i], age)) {
+                processed[key][i].records.push(emptyYear);
+            }
+        }
+
+        // sort the data by age
+        processed[key][i] = processed[key][i].sort(function(a, b) { return d3.ascending(a.age, b.age); });
+    }
+*/
 }
 
 // process each dataset
-processData(pitcherData, 'pitchers');
-processData(hitterData, 'hitters');
+processData(pitcherData, 'pitchers', PITCHER_AGE_BOUNDS, {WARra9: 0, WARfip: 0});
+processData(hitterData, 'hitters', HITTER_AGE_BOUNDS, {"Value Batting": 0, "Value Fielding": 0, "Value Running": 0});
 
 // convert runs to WAR for hitter data for the following fields
 var conversionStats = ['Batting', 'Running', 'Fielding'];
-
-var RUNS_PER_WAR = 10;
 
 // for each hitter
 $.each(processed.hitters, function(index, hitter) {
     // for each year
     $.each(hitter.records, function(index, record) {
-        // for each stat
+        // sum the total value
+        var totalValue = 0;
+
+        // TODO: clean this process
+        // for each stat add in that component value to the sum
         $.each(conversionStats, function(index, stat) {
-            record['Value ' + stat] /= RUNS_PER_WAR;
-            record['Value ' + stat + ' LL'] /= RUNS_PER_WAR;
-            record['Value ' + stat + ' LA'] /= RUNS_PER_WAR;
+            totalValue += record['Value ' + stat];
+        });
+
+        // replacement value 
+        var replacementValue = record.RAR - totalValue;
+
+        // ratio of RAR to WAR
+        var rarPerWar = record.RAR / record.WAR;
+
+        $.each(conversionStats, function(index, stat) {
+            record['Value ' + stat] = (record['Value ' + stat] + replacementValue / 3) / rarPerWar;
         });
     })
 });
