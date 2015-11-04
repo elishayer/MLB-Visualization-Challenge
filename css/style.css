@@ -5,11 +5,15 @@
  * majorleaguedatachallenge.com
  */
 
-/* temporary outline for designing purposes */
-svg {
-    border-width: 1px;
-    border-color: black;
-    border-style: solid;
+/* Player category */
+.player-category {
+    text-align: center;
+    text-transform: capitalize;
+}
+
+/* Player title */
+.player-title {
+    text-align: left;
 }
 
 /* Styles for the .axis class */

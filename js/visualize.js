@@ -10,7 +10,7 @@
 // ======================================== Constants
 
 // Chart SVG size
-var CHART_WIDTH = 550;
+var CHART_WIDTH = 525;
 var CHART_HEIGHT = 250;
 
 // chart padding values
@@ -107,7 +107,7 @@ var LEGEND_WIDTH = 200;
 var LEGEND_HEIGHT = 250;
 
 // Polygon SVG size
-var POLY_WIDTH = 250;
+var POLY_WIDTH = 200;
 var POLY_HEIGHT = 250;
 
 // Polygon title parameters
@@ -116,8 +116,8 @@ var POLY_TITLE_SIZE = 18;     // set in the .polygon-title class
 
 // Polygon parameters
 var POLY_SIDES = 6;
-var POLY_D_RADIUS = 8;
-var NUM_POLY = 10;
+var POLY_D_RADIUS = 9;
+var NUM_POLY = 8;
 var POLY_AVERAGE = Math.round(NUM_POLY / 2);
 
 // Polygon colors and stroke width
@@ -158,8 +158,29 @@ var ZERO_EPSILON = 0.001 // zero with a bound
 // variable for later transitions of skill polygons
 var skillPolygons = {};
 
+// ======================================== Setup DOM
+
+// initialize a bootstrap container then a main row
+var mainRow = d3.select('body')
+				.append('div')
+				.attr('class', 'container')
+				.append('div')
+				.attr('class', 'row');
+
+// create two children from the main row: visualizations and navigation
+var visCol = mainRow.append('div').attr('class', 'col-xs-10').attr('id', 'vis');
+var navCol = mainRow.append('div').attr('class', 'col-xs-2').attr('id', 'nav');
+
+
 // ======================================== Visualization Function
 function visualizeCareers(processedData, playerType, war, champ, awards, basic, advanced, isStacked) {
+	// ======================================== Category
+	// append a header naming the player category
+	visCol.append('h2')
+			.attr('class', 'player-category')
+			.attr('id', playerType + '-vis')
+			.text(playerType);
+
 	// ======================================== Chart
 	// -------------------- WAR Scale
 	// a scale for WAR from 0 to the highest WAR value
@@ -191,12 +212,23 @@ function visualizeCareers(processedData, playerType, war, champ, awards, basic, 
 
 	// create a graph for each player
 	$.each(processedData, function(index, playerData) {
+		// initalize a bootsrap row to hold all the relevant elements
+		var row = visCol.append('div')
+						.attr('class', 'row');
+
+		// add a title corresponding to the player name
+		row.append('h3')
+			.attr('class', 'player-title')
+			.attr('id', playerData.id + '-vis')
+			.text(playerData.name + ' (' + playerData.minYear + ' - ' + playerData.maxYear + ')');
+
 		// -------------------- Initialization
 		// initialize a SVG container, retain for easier future access
-		var svg = d3.select('body')
-					.append('svg')
-					.attr('width', CHART_WIDTH)
-					.attr('height', CHART_HEIGHT);
+		var svg = row.append('div')
+						.attr('class', 'col-xs-7')
+						.append('svg')
+						.attr('width', CHART_WIDTH)
+						.attr('height', CHART_HEIGHT);
 
 		// -------------------- Year Scale
 		// a scale for the years spanning the full set of years
@@ -304,7 +336,7 @@ function visualizeCareers(processedData, playerType, war, champ, awards, basic, 
 							.attr('class', 'chart-title')
 							.attr('x', CHART_WIDTH / 2)
 							.attr('y', CHART_TITLE_SIZE)
-							.text(playerData.name)
+							.text('Career WAR Chart');
 
 		// center the title
 		adjustObjLoc(chartTitle);
@@ -390,10 +422,11 @@ function visualizeCareers(processedData, playerType, war, champ, awards, basic, 
 
 		// ======================================== Polygon
 		// create a svg for the polygon
-		var polySvg = d3.select('body')
-					.append('svg')
-					.attr('width', POLY_WIDTH)
-					.attr('height', POLY_HEIGHT);
+		var polySvg = row.append('div')
+							.attr('class', 'col-xs-3')
+							.append('svg')
+							.attr('width', POLY_WIDTH)
+							.attr('height', POLY_HEIGHT);
 
 		// helper function to get x coordinate
 		function getX(radius, angle) {
@@ -469,7 +502,7 @@ function visualizeCareers(processedData, playerType, war, champ, awards, basic, 
 		}
 
 		// helper function to draw a skill polygon
-		function drawSkillPolygon(skills, record) {
+		function drawSkillPolygon(skills, records) {
 			var path = '';
 			var dRadians = 2 * Math.PI / POLY_SIDES;
 
@@ -478,14 +511,22 @@ function visualizeCareers(processedData, playerType, war, champ, awards, basic, 
 
 			// maximum radius, to edge of polygon
 			var maxR = NUM_POLY * POLY_D_RADIUS;
-
+//			console.log(records[0].name);
 			$.each(skills, function(index, skill) {
+//				console.log(skill);
+//				console.log([d3.mean(records, function(d) { return d[skill.key + 'mean']; }),
+//										d3.mean(records, function(d) { return d[skill.key + 'best']; })]);
+//				console.log(d3.mean(records, function(d) { return d[skill.key]; }));
 				var scale = d3.scale.linear()
-									.domain([record[skill.key + 'mean'], record[skill.key + 'best']])
+									// average all means and bests in the career years
+									.domain([d3.mean(records, function(d) { return d[skill.key + 'mean']; }),
+										d3.mean(records, function(d) { return d[skill.key + 'best']; })])
 									.range([maxR / 2, maxR]);
 
 				// insure that all radii are in the range [0, maxR]
-				path += pathPt(Math.min(Math.max(0, scale(record[skill.key])), maxR), angle);
+				// take the average over the career
+				path += pathPt(Math.min(Math.max(0, scale(
+					d3.mean(records, function(d) { return d[skill.key]; }))), maxR), angle);
 
 				// add skill labels
 				var polyLabel = polySvg.append('text')
@@ -506,7 +547,7 @@ function visualizeCareers(processedData, playerType, war, champ, awards, basic, 
 							.attr('d', 'M' + path.substring(1) + 'Z')
 							.attr('stroke', POLY_SKILL_STROKE)
 							.attr('stroke-width', POLY_SKILL_STROKE_WIDTH)
-							.attr('fill', record.teamColor)
+							.attr('fill', records[0].teamColor) // TODO: choose and get the correct index
 							.attr('opacity', POLY_SKILL_OPACITY);
 		}
 
@@ -514,11 +555,11 @@ function visualizeCareers(processedData, playerType, war, champ, awards, basic, 
 		// layers from bottom to top: 1) Team image
 		//                            2) Regular polygons
 		//                            3) Skill polygon
-		function drawPolygon(name, records, index) {
+		function drawPolygon(name, records) {
 			var polyTitle = polySvg.append('text')
 									.attr('class', 'polygon-title')
 									.attr('y', POLY_TITLE_SIZE + POLY_TITLE_TOP_PADDING)
-									.text(name + ' (' + records[index].year + ')');
+									.text('Skills Polygon: ' + 'Career');
 
 			// adjust x position to center
 			polyTitle.attr('x', (POLY_WIDTH - $(polyTitle.node()).width()) / 2);
@@ -526,7 +567,7 @@ function visualizeCareers(processedData, playerType, war, champ, awards, basic, 
 			// add a key for the player to store the skill polygon for later access
 			skillPolygons[name] = {
 				image: polySvg.append('image')
-								.attr('xlink:href', records[index].teamImage)
+								.attr('xlink:href', records[0].teamImage) // TODO: choose and get correct index
 								.attr('x', (POLY_WIDTH - POLY_IMAGE_SIZE) / 2)
 								.attr('y', (POLY_HEIGHT - POLY_IMAGE_SIZE +
 									POLY_TITLE_TOP_PADDING + POLY_TITLE_SIZE) / 2)
@@ -545,17 +586,18 @@ function visualizeCareers(processedData, playerType, war, champ, awards, basic, 
 				drawRegularPolygon(POLY_SIDES, p * POLY_D_RADIUS, color, strokeWidth);
 			}
 
-			// draw the skill polygon using test categories and first year of data
-			skillPolygons[name].poly = drawSkillPolygon(basic, records[index]);
+			// draw the skill polygon
+			skillPolygons[name].poly = drawSkillPolygon(basic, records);
 		}
 
 		// draw the polygon
 		// TODO: convert to career
-		drawPolygon(playerData.name, playerData.records, 10);
+		drawPolygon(playerData.name, playerData.records);
 
 	});
 /*
 	// ======================================== Legend
+	// TODO: make the legend
 	// create an svg for the legend
 	var legend = d3.select('body')
 					.append('svg')
@@ -579,7 +621,9 @@ function visualizeCareers(processedData, playerType, war, champ, awards, basic, 
 */
 }
 
-visualizeCareers(processed.pitchers, 'hitter', PITCHER_WAR, PITCHER_CHAMP_STATS,
+visualizeCareers(processed.pitchers, 'pitchers', PITCHER_WAR, PITCHER_CHAMP_STATS,
 	PITCHER_AWARDS, PITCHER_STATS_BASIC, PITCHER_STATS_ADV, false);
-visualizeCareers(processed.hitters, 'pitcher', HITTER_WAR, HITTER_CHAMP_STATS,
+visualizeCareers(processed.hitters, 'hitters', HITTER_WAR, HITTER_CHAMP_STATS,
 	HITTER_AWARDS, HITTER_STATS_BASIC, HITTER_STATS_ADV, true);
+
+// ======================================== Navigation Column

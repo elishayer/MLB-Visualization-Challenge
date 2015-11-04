@@ -421,6 +421,7 @@ processed.pitchers = [];
 function getTeamColor(team) {
     switch(team.substring(0, 3)) {
         case 'BOS': return '#c60c30';
+        case 'BSN': return '#002f5f';
         case 'CHC': return '#003279';
         case 'CHW': return '#c0c0c0';
         case 'CIN': return '#c6011f';
@@ -484,6 +485,11 @@ function processData(dataset, key) {
         if (nameIndex === NOT_FOUND_SENTINEL && record.year !== 'Career') {
             processed[key].push({
                 name    : record.name,
+                minYear : record.year,
+                maxYear : record.year,
+                // relies on name in form 'First Last' with no other spaces
+                // which works with all relevant players
+                id      : record.name.substring(record.name.indexOf(' ') + 1).toLowerCase(),
                 records : []
             });
 
@@ -500,6 +506,14 @@ function processData(dataset, key) {
 
             // add this current record to the processed data
             processed[key][nameIndex].records.push(record);
+
+            // update min and max year fields
+            if (record.year < processed[key][nameIndex].minYear) {
+                processed[key][nameIndex].minYear = record.year;
+            }
+            if (record.year > processed[key][nameIndex].maxYear) {
+                processed[key][nameIndex].maxYear = record.year;
+            }
         }
     });
 }
