@@ -418,14 +418,41 @@ var processed = {};
 processed.hitters = [];
 processed.pitchers = [];
 
+// team colors, sourced from http://teamcolors.arc90.com/
+function getTeamColor(team) {
+    switch(team.substring(0, 3)) {
+        case 'BOS': return '#c60c30';
+        case 'CHC': return '#003279';
+        case 'CHW': return '#c0c0c0';
+        case 'CIN': return '#c6011f';
+        case 'CLE':
+        case 'CLV': return '#d30335';
+        case 'DET': return '#001742';
+        case 'HOU': return '#072854';
+        case 'LAA': return '#b71234';
+        case 'BRO':
+        case 'LAD': return '#083c6b';
+        case 'NYM': return '#002c77';
+        case 'NYY': return '#1c2841';
+        case 'PHA':
+        case 'PHI': return '#ba0c2f';
+        case 'PIT': return '#fdb829';
+        case 'SFG':
+        case 'NYG': return '#f2552c';
+        case 'SLB':
+        case 'SLM':
+        case 'STL': return '#c41e3a';
+        case 'TOR': return '#003da5';
+        case 'WSH': return '#ba122b';
+        // For debugging only. TODO: delete
+        default: console.log('no color found for ' + team.substring(0, 3)); return '#ffffff';
+    }
+}
+
 // helper function to get the name of the team image for a record
 function getTeamImage(team, year) {
     var file = '';
-    //console.log(team);
-    if (!TEAM_IMAGES[team.substring(0, 3)]) {
-        console.log(team);
-        console.log(year);
-    }
+
     // use the first three char team code in the case of multiple teams
     $.each(TEAM_IMAGES[team.substring(0, 3)], function(index, logo) {
         // if a file hasn't yet been selected and the years match
@@ -466,16 +493,10 @@ function processData(dataset, key) {
         }
 
         if (record.year !== 'Career') {
-            // add the team image to the record
-            if (record.team) {
-                var teamlogo = getTeamImage(record.team, record.year);
-                if (!teamlogo.length) {
-                    console.log(record.team);
-                    console.log(record.year);
-                }
-            }
+            // add the team image and team color to the record, if a team is given
             if (record.team) {
                 record.teamImage = 'images/teams/' + getTeamImage(record.team, record.year) + '.jpg';
+                record.teamColor = getTeamColor(record.team);
             }
 
             // add this current record to the processed data

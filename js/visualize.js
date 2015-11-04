@@ -159,7 +159,7 @@ var ZERO_EPSILON = 0.001 // zero with a bound
 var skillPolygons = {};
 
 // ======================================== Visualization Function
-function visualizeCareers(processedData, war, champ, awards, basic, advanced, isStacked) {
+function visualizeCareers(processedData, playerType, war, champ, awards, basic, advanced, isStacked) {
 	// ======================================== Chart
 	// -------------------- WAR Scale
 	// a scale for WAR from 0 to the highest WAR value
@@ -468,33 +468,6 @@ function visualizeCareers(processedData, war, champ, awards, basic, advanced, is
 			}
 		}
 
-		// team colors, sourced from http://teamcolors.arc90.com/
-		function getTeamColor(team) {
-			switch(team.substring(0, 3)) {
-				case 'BOS': return '#c60c30';
-				case 'CHC': return '#003279';
-				case 'CHW': return '#c0c0c0';
-				case 'CIN': return '#c6011f';
-				case 'CLV': return '#d30335';
-				case 'DET': return '#001742';
-				case 'HOU': return '#072854';
-				case 'LAA': return '#b71234';
-				case 'LAD': return '#083c6b';
-				case 'NYM': return '#002c77';
-				case 'NYY': return '#1c2841';
-				case 'PHA':
-				case 'PHI': return '#ba0c2f';
-				case 'PIT': return '#fdb829';
-				case 'SFG':
-				case 'NYG': return '#f2552c';
-				case 'STL': return '#c41e3a';
-				case 'TOR': return '#003da5';
-				case 'WSH': return '#ba122b';
-				// For debugging only. TODO: delete
-				default: console.log('no color found'); return '#ffffff';
-			}
-		}
-
 		// helper function to draw a skill polygon
 		function drawSkillPolygon(skills, record) {
 			var path = '';
@@ -527,16 +500,13 @@ function visualizeCareers(processedData, war, champ, awards, basic, advanced, is
 				angle += dRadians;
 			});
 
-			// get the team color
-			var teamColor = getTeamColor(record.team);
-
 			// draw the skills polygon with color specified by the teams
 			// TODO: convert to career by default
 			return polySvg.append('path')
 							.attr('d', 'M' + path.substring(1) + 'Z')
 							.attr('stroke', POLY_SKILL_STROKE)
 							.attr('stroke-width', POLY_SKILL_STROKE_WIDTH)
-							.attr('fill', teamColor)
+							.attr('fill', record.teamColor)
 							.attr('opacity', POLY_SKILL_OPACITY);
 		}
 
@@ -609,5 +579,7 @@ function visualizeCareers(processedData, war, champ, awards, basic, advanced, is
 */
 }
 
-visualizeCareers(processed.pitchers, PITCHER_WAR, PITCHER_CHAMP_STATS, PITCHER_AWARDS, PITCHER_STATS_BASIC, PITCHER_STATS_ADV, false);
-visualizeCareers(processed.hitters, HITTER_WAR, HITTER_CHAMP_STATS, HITTER_AWARDS, HITTER_STATS_BASIC, HITTER_STATS_ADV, true);
+visualizeCareers(processed.pitchers, 'hitter', PITCHER_WAR, PITCHER_CHAMP_STATS,
+	PITCHER_AWARDS, PITCHER_STATS_BASIC, PITCHER_STATS_ADV, false);
+visualizeCareers(processed.hitters, 'pitcher', HITTER_WAR, HITTER_CHAMP_STATS,
+	HITTER_AWARDS, HITTER_STATS_BASIC, HITTER_STATS_ADV, true);
