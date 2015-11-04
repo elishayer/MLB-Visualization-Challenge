@@ -167,6 +167,10 @@ var mainRow = d3.select('body')
 				.append('div')
 				.attr('class', 'row');
 
+// Overview for the project
+mainRow.append('h1').text('Title');
+mainRow.append('p').text('This is where we explain the entry');
+
 // create two children from the main row: visualizations and navigation
 var visCol = mainRow.append('div').attr('class', 'col-xs-10').attr('id', 'vis');
 var navCol = mainRow.append('div').attr('class', 'col-xs-2').attr('id', 'nav');
@@ -214,12 +218,12 @@ function visualizeCareers(processedData, playerType, war, champ, awards, basic, 
 	$.each(processedData, function(index, playerData) {
 		// initalize a bootsrap row to hold all the relevant elements
 		var row = visCol.append('div')
-						.attr('class', 'row');
+						.attr('id', playerData.id)
+						.attr('class', 'row player-vis');
 
 		// add a title corresponding to the player name
 		row.append('h3')
 			.attr('class', 'player-title')
-			.attr('id', playerData.id + '-vis')
 			.text(playerData.name + ' (' + playerData.minYear + ' - ' + playerData.maxYear + ')');
 
 		// -------------------- Initialization

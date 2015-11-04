@@ -221,7 +221,6 @@ var TEAM_IMAGES = {
             maxYear: 1916,
             file: 'newyorkgiants1916'
         },
-        // TODO: fix this
         {
             minYear: 1951,
             maxYear: 1957,
@@ -414,8 +413,8 @@ var TEAM_IMAGES = {
 
 // object to hold processed data
 var processed = {};
-processed.hitters = [];
 processed.pitchers = [];
+processed.hitters = [];
 
 // team colors, sourced from http://teamcolors.arc90.com/
 function getTeamColor(team) {
