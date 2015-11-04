@@ -110,6 +110,10 @@ var LEGEND_HEIGHT = 250;
 var POLY_WIDTH = 250;
 var POLY_HEIGHT = 250;
 
+// Polygon title parameters
+var POLY_TITLE_TOP_PADDING = 10;
+var POLY_TITLE_SIZE = 18;     // set in the .polygon-title class
+
 // Polygon parameters
 var POLY_SIDES = 6;
 var POLY_D_RADIUS = 8;
@@ -124,9 +128,9 @@ var POLY_STROKE_DEFAULT = 1;
 var POLY_STROKE_THICK = 2;
 
 // Skill poly color and stroke
-var POLY_SKILL_STROKE_WIDTH = 2;
-var POLY_SKILL_STROKE_COLOR = '#000000';
-var POLY_SKILL_FILL_COLOR = 'rgba(0, 0, 0, 0.5)';
+var POLY_SKILL_STROKE = '#000000';
+var POLY_SKILL_STROKE_WIDTH = 3;
+var POLY_SKILL_OPACITY = 0.7;
 
 // Polygon stats
 var PITCHER_STATS_BASIC = [{name: 'Wins', key: 'W'}, {name: 'ERA', key: 'ERA'},
@@ -263,45 +267,47 @@ function visualizeCareers(processedData, war, champ, awards, basic, advanced, is
 						.ticks(WAR_TICKS));
 
 		// -------------------- Axis Titles
-		// helper function to center objects horizontally
-		function centerObj(obj, isHorizontal) {
-			if (isHorizontal) {
-				obj.attr('x', (CHART_WIDTH - $(obj.node()).width()) / 2);
-			} else {
-				obj.attr('x', -(CHART_HEIGHT + $(obj.node()).width()) / 2);
-			}
+		// helper function to adjust for text width to center an object
+		// allows for adjustment in either the x or y dimension, defaulting to x
+		// allows for muliple adjustments as specified by num, in the unit of half width
+		// assumes one half width unless otherwise specified
+		// allows for additional padding to the adjustment as specified 
+		// subtract negative padding to protect against a string being passed in
+		function adjustObjLoc(obj, isY, halfWidths, padding) {
+			obj.attr((isY ? 'y' : 'x'), obj.attr((isY ? 'y' : 'x')) - (halfWidths ? halfWidths : 1) *
+				$(obj.node()).width() / 2 - -(padding ? padding : 0));
 		}
 
 		// horizontal year axis title
 		var yearAxisTitle = svg.append('text')
 								.attr('class', 'axis-title')
+								.attr('x', (CHART_WIDTH - CHART_RIGHT_PADDING + CHART_LEFT_PADDING) / 2)
 								.attr('y', CHART_HEIGHT - CHART_BOTTOM_PADDING +
 									AXIS_TITLE_SIZE + AXIS_BOTTOM_PADDING)
 								.text('Year');
 
 		// center the horizontal axis title
-		// TODO: make this center relative to the axis
-		centerObj(yearAxisTitle, true);
+		adjustObjLoc(yearAxisTitle);
 
 		// vertical WAR axis title
 		var warAxisTitle = svg.append('text')
 								.attr('class', 'axis-title vert-text')
-								.attr('x', -CHART_HEIGHT / 2)
+								.attr('x', -(CHART_HEIGHT - CHART_BOTTOM_PADDING + CHART_TOP_PADDING) / 2)
 								.attr('y', CHART_LEFT_PADDING - AXIS_LEFT_PADDING)
 								.text('WAR');
 
 		// center the vertical axis title
-		// TODO: make this center relative to the axis
-		centerObj(warAxisTitle, false);
+		adjustObjLoc(warAxisTitle);
 
 		// -------------------- Chart Title
 		var chartTitle = svg.append('text')
 							.attr('class', 'chart-title')
+							.attr('x', CHART_WIDTH / 2)
 							.attr('y', CHART_TITLE_SIZE)
 							.text(playerData.name)
 
 		// center the title
-		centerObj(chartTitle, true);
+		adjustObjLoc(chartTitle);
 
 		// -------------------- Champ stats and year lines
 		$.each(playerData.records, function(index, record) {
@@ -318,7 +324,7 @@ function visualizeCareers(processedData, war, champ, awards, basic, advanced, is
 										.text(stat);
 
 					// adjust x position to center notes on the year
-					champNote.attr('x', champNote.attr('x') - $(champNote.node()).width() / 2);
+					adjustObjLoc(champNote);
 
 					// adjust y for the next stat
 					y -= CHAMP_SIZE + CHAMP_INTERIOR_PADDING;
@@ -363,8 +369,8 @@ function visualizeCareers(processedData, war, champ, awards, basic, advanced, is
 								.attr('y', yAward)
 								.text(award.name + ':');
 
-			// adjust label backwards such that colons line up
-			awardLabel.attr('x', awardLabel.attr('x') - $(awardLabel.node()).width());
+			// adjust label backwards a full width (2 half-widths) to line up colons
+			adjustObjLoc(awardLabel, false, 2);
 
 			// for each year
 			$.each(playerData.records, function(index, record) {
@@ -396,7 +402,8 @@ function visualizeCareers(processedData, war, champ, awards, basic, advanced, is
 
 		// helper function to get y coordinate
 		function getY(radius, angle) {
-			return POLY_HEIGHT / 2 + radius * Math.sin(angle);
+			return (POLY_HEIGHT + POLY_TITLE_SIZE + POLY_TITLE_TOP_PADDING) / 2 +
+				radius * Math.sin(angle);
 		}
 
 		// helper function to add a point to a path
@@ -426,6 +433,66 @@ function visualizeCareers(processedData, war, champ, awards, basic, advanced, is
 					.attr('stroke', color)
 					.attr('stroke-width', strokeWidth)
 					.attr('fill', 'none');
+		}
+
+		// helper function to adjust the location of the polygon label
+		function adjustPolyLabelLoc(label, angle) {
+			// adjust x location
+
+			// if label is on the left, move one width left and add padding
+			if (Math.cos(angle) < -ZERO_EPSILON) {
+				adjustObjLoc(label, false, 2, -POLY_LABEL_PADDING);
+
+			// if label is on top/bottom, move half width left
+			} else if (Math.abs(Math.cos(angle)) < ZERO_EPSILON) {
+				adjustObjLoc(label);
+			
+			// if label is on the left, add padding.
+			// parseFloat to convert string to float, because .attr('y') returns string
+			// and the + operator concatenates rather than adds
+			} else { // TODO: convert to adjustObjLoc
+				//adjustObjLoc(label, false, 0, POLY_LABEL_PADDING);
+				label.attr('x', parseFloat(label.attr('x')) + POLY_LABEL_PADDING);
+			}
+
+			// adjust y location
+
+			// if label is on the top, add padding
+			if (Math.sin(angle) < 0) {
+				label.attr('y', label.attr('y') - POLY_LABEL_PADDING);
+
+			// if label is on bottom, adjust by font size and add padding
+			// same parseFloat rationale: convert from string to float to add rather than concatenate
+			} else {
+				label.attr('y', parseFloat(label.attr('y')) + POLY_LABEL_SIZE + POLY_LABEL_PADDING);
+			}
+		}
+
+		// team colors, sourced from http://teamcolors.arc90.com/
+		function getTeamColor(team) {
+			switch(team.substring(0, 3)) {
+				case 'BOS': return '#c60c30';
+				case 'CHC': return '#003279';
+				case 'CHW': return '#c0c0c0';
+				case 'CIN': return '#c6011f';
+				case 'CLV': return '#d30335';
+				case 'DET': return '#001742';
+				case 'HOU': return '#072854';
+				case 'LAA': return '#b71234';
+				case 'LAD': return '#083c6b';
+				case 'NYM': return '#002c77';
+				case 'NYY': return '#1c2841';
+				case 'PHA':
+				case 'PHI': return '#ba0c2f';
+				case 'PIT': return '#fdb829';
+				case 'SFG':
+				case 'NYG': return '#f2552c';
+				case 'STL': return '#c41e3a';
+				case 'TOR': return '#003da5';
+				case 'WSH': return '#ba122b';
+				// For debugging only. TODO: delete
+				default: console.log('no color found'); return '#ffffff';
+			}
 		}
 
 		// helper function to draw a skill polygon
@@ -460,95 +527,61 @@ function visualizeCareers(processedData, war, champ, awards, basic, advanced, is
 				angle += dRadians;
 			});
 
-			// helper function to adjust the location of the polygon label
-			function adjustPolyLabelLoc(label, angle) {
-				// adjust x location
-
-				// if label is on the left, move one width left and add padding
-				if (Math.cos(angle) < -ZERO_EPSILON) {
-					label.attr('x', label.attr('x') - $(label.node()).width() - POLY_LABEL_PADDING);
-
-				// if label is on top/bottom, move half width left and add padding
-				} else if (Math.abs(Math.cos(angle)) < ZERO_EPSILON) {
-					label.attr('x', label.attr('x') - $(label.node()).width() / 2);
-				
-				// if label is on the left, add padding.
-				// parseFloat to convert string to float, because .attr('y') returns string
-				// and the + operator concatenates rather than adds
-				} else {
-					label.attr('x', parseFloat(label.attr('x')) + POLY_LABEL_PADDING);
-				}
-
-				// adjust y location
-
-				// if label is on the top, add padding
-				if (Math.sin(angle) < 0) {
-					label.attr('y', label.attr('y') - POLY_LABEL_PADDING);
-
-				// if label is on bottom, adjust by font size and add padding
-				// same parseFloat rationale: convert from string to float to add rather than concatenate
-				} else {
-					label.attr('y', parseFloat(label.attr('y')) + POLY_LABEL_SIZE + POLY_LABEL_PADDING);
-				}
-			}
-
-			// team colors, sourced from http://teamcolors.arc90.com/
-			function getTeamColor(team) {
-				switch(team) {
-					case 'BOS': return '#c60c30';
-					case 'CHC': return '#003279';
-					case 'CHW': return '#c0c0c0';
-					case 'CIN': return '#c6011f';
-					case 'CLV': return '#d30335';
-					case 'DET': return '#001742';
-					case 'HOU': return '#072854';
-					case 'LAA': return '#b71234';
-					case 'LAD': return '#083c6b';
-					case 'NYM': return '#002c77';
-					case 'NYY': return '#1c2841';
-					case 'PHI': return '#ba0c2f';
-					case 'PIT': return '#fdb829';
-					case 'SFG': return '#f2552c';
-					case 'STL': return '#c41e3a';
-					case 'TOR': return '#003da5';
-					case 'WSH': return '#ba122b';
-				}
-			}
-
+			// get the team color
+			var teamColor = getTeamColor(record.team);
 
 			// draw the skills polygon with color specified by the teams
-			// TODO: put parameters in constants
 			// TODO: convert to career by default
 			return polySvg.append('path')
 							.attr('d', 'M' + path.substring(1) + 'Z')
-							.attr('stroke-width', 0)
-							.attr('fill', getTeamColor(playerData.records[3].team))
-							.attr('opacity', 0.6);
+							.attr('stroke', POLY_SKILL_STROKE)
+							.attr('stroke-width', POLY_SKILL_STROKE_WIDTH)
+							.attr('fill', teamColor)
+							.attr('opacity', POLY_SKILL_OPACITY);
 		}
 
-		// add a key for the player to store the skill polygon for later access
-		skillPolygons[playerData.name] = {
-			image: polySvg.append('image')
-							.attr('xlink:href', playerData.records[3].teamImage)
-							.attr('x', (POLY_WIDTH - POLY_IMAGE_SIZE) / 2)
-							.attr('y', (POLY_HEIGHT - POLY_IMAGE_SIZE) / 2)
-							.attr('width', POLY_IMAGE_SIZE)
-							.attr('height', POLY_IMAGE_SIZE)
-		};
+		// draws the polygon and its title in its entirety
+		// layers from bottom to top: 1) Team image
+		//                            2) Regular polygons
+		//                            3) Skill polygon
+		function drawPolygon(name, records, index) {
+			var polyTitle = polySvg.append('text')
+									.attr('class', 'polygon-title')
+									.attr('y', POLY_TITLE_SIZE + POLY_TITLE_TOP_PADDING)
+									.text(name + ' (' + records[index].year + ')');
 
-		// draw the regular polygons
-		for (var p = 0; p <= NUM_POLY; p++) {
-			var color = POLY_COLOR_DEFAULT;
-			var strokeWidth = POLY_STROKE_DEFAULT;
-			if (p === NUM_POLY || p === NUM_POLY / 2) {
-				color = (p === NUM_POLY ? POLY_COLOR_LEADER : POLY_COLOR_AVERAGE);
-				strokeWidth = POLY_STROKE_THICK;
+			// adjust x position to center
+			polyTitle.attr('x', (POLY_WIDTH - $(polyTitle.node()).width()) / 2);
+
+			// add a key for the player to store the skill polygon for later access
+			skillPolygons[name] = {
+				image: polySvg.append('image')
+								.attr('xlink:href', records[index].teamImage)
+								.attr('x', (POLY_WIDTH - POLY_IMAGE_SIZE) / 2)
+								.attr('y', (POLY_HEIGHT - POLY_IMAGE_SIZE +
+									POLY_TITLE_TOP_PADDING + POLY_TITLE_SIZE) / 2)
+								.attr('width', POLY_IMAGE_SIZE)
+								.attr('height', POLY_IMAGE_SIZE)
+			};
+
+			// draw the regular polygons
+			for (var p = 0; p <= NUM_POLY; p++) {
+				var color = POLY_COLOR_DEFAULT;
+				var strokeWidth = POLY_STROKE_DEFAULT;
+				if (p === NUM_POLY || p === NUM_POLY / 2) {
+					color = (p === NUM_POLY ? POLY_COLOR_LEADER : POLY_COLOR_AVERAGE);
+					strokeWidth = POLY_STROKE_THICK;
+				}
+				drawRegularPolygon(POLY_SIDES, p * POLY_D_RADIUS, color, strokeWidth);
 			}
-			drawRegularPolygon(POLY_SIDES, p * POLY_D_RADIUS, color, strokeWidth);
+
+			// draw the skill polygon using test categories and first year of data
+			skillPolygons[name].poly = drawSkillPolygon(basic, records[index]);
 		}
 
-		// draw the skill polygon using test categories and first year of data
-		skillPolygons[playerData.name].poly = drawSkillPolygon(basic, playerData.records[3]);
+		// draw the polygon
+		// TODO: convert to career
+		drawPolygon(playerData.name, playerData.records, 10);
 
 	});
 /*

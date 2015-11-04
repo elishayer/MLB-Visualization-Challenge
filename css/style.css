@@ -93,6 +93,11 @@ svg {
 }
 
 /* Polygon styles */
+.polygon-title {
+    font-family: sans-serif;
+    font-size: 18px;
+}
+
 .polygon-label {
     font-family: sans-serif;
     font-size: 15px; /* If changed, make corresponding change to js constant */

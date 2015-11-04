@@ -364,7 +364,7 @@ var TEAM_IMAGES = {
         {
             minYear: 1899,
             maxYear: 1919,
-            file: 'perfecto-cardinals1899-1919'
+            file: 'perfectos-cardinals1899-1919'
         },
         {
             minYear: 1922,
