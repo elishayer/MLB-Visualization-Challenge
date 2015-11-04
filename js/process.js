@@ -37,9 +37,9 @@ var TEAM_IMAGES = {
     ],
     BSN: [
         {
-            minYear: 1900,
-            maxYear: 2000,
-            file: 'TODO'
+            minYear: 1929,
+            maxYear: 1935,
+            file: 'bostonbraves1929-1935'
         }
     ],
     BRO: [
@@ -154,12 +154,11 @@ var TEAM_IMAGES = {
             file: 'astros2000-2012'
         }
     ],
-    // TODO: get the actual Angels logo
     LAA: [
         {
-            minYear: 1900,
+            minYear: 2005,
             maxYear: PRESENT_YEAR,
-            file: 'TODO'
+            file: 'angels2005-pres'
         }
     ],
     LAD: [
