@@ -443,8 +443,7 @@ function getTeamColor(team) {
         case 'STL': return '#c41e3a';
         case 'TOR': return '#003da5';
         case 'WSH': return '#ba122b';
-        // For debugging only. TODO: delete
-        default: console.log('no color found for ' + team.substring(0, 3)); return '#ffffff';
+        default: return '#ffffff';
     }
 }
 

@@ -72,20 +72,29 @@ $.each($('.vis-form-wrapper'), function(index, formWrapper) {
 	// initialize the 'basic' input to selected
 	$('.radio-b').prop('checked', true);
 
-
-
 	// add a seperator
 	$('<hr>').appendTo(formWrapper);
 });
 
 // ======================================== Form Event Listeners
+// radio button listener
+$('input').change(function(event) {
+	// cache jQuery event
+	var $this = $(this);
 
+	// collect event information
+	var name = $this.attr('name').substring(0, $this.attr('name').indexOf('-'));
+	var value = $this.attr('value');
+});
 
 // ======================================== Player List Interaction
 
-// a buffer from the top of the screen when viewing players
-var BUFFER_TOP = 10;
+// a buffer from the top of the screen for the legend
+var LEGEND_BUFFER = 10;
 
+// a buffer from the top of the screen when viewing players
+var PLAYER_LIST_BUFFER = LEGEND_HEIGHT + 20;
+PLAYER_LIST_BUFFER
 // a buffer from the top of the screen to determine which player is being viewed
 var BUFFER_VIEW = 200;
 
@@ -100,7 +109,7 @@ var $lastPlayer = $($allPlayers[$allPlayers.length - 1]);
 // use those two players to get breakpoints
 var preBreakpoint, topBreakpoint, bottomBreakpoint;
 setBreakpoints = function() {
-	preBreakpoint = $('#nav').offset().top;
+	preBreakpoint = $('#vis').offset().top;
 	topBreakpoint = $firstPlayer.offset().top;
 	bottomBreakpoint = $lastPlayer.offset().top;
 };
@@ -113,6 +122,7 @@ $(window).resize(setBreakpoints);
 
 // cache jQuery objects for efficiency
 var $playersList = $('.players-list');
+var $legendSvg = $('.legend-svg');
 var $window = $(window);
 
 // respond every time a scroll occurs
@@ -125,6 +135,10 @@ $window.scroll(function () {
 			position: 'relative',
 			top: ''
 		});
+		$legendSvg.css({
+			position: 'relative',
+			top: ''
+		});
 		$('.' + selectedClass).toggleClass(selectedClass, false);
 	// if below all players, lock the list into place at the bottom
 	} else if (screenTop > $lastPlayer.offset().top) {
@@ -132,11 +146,19 @@ $window.scroll(function () {
 			position: 'relative',
 			top: bottomBreakpoint - preBreakpoint
 		});
+		$legendSvg.css({
+			position: 'fixed',
+			top: LEGEND_BUFFER
+		});
 	// if viewing players, make the list fixed and set one player as active
 	} else { 
 		$playersList.css({
 			position: 'fixed',
-			top: BUFFER_TOP
+			top: PLAYER_LIST_BUFFER
+		});
+		$legendSvg.css({
+			position: 'fixed',
+			top: LEGEND_BUFFER
 		});
 		// if screen is at the bottom, set the last player to active and its parent
 		// buffer of 1 pixel for rounding

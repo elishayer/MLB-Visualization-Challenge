@@ -108,7 +108,7 @@ var ICON_SIZE = 10;
 
 // Legend constants
 var LEGEND_WIDTH = 150;
-var LEGEND_HEIGHT = 120;
+var LEGEND_HEIGHT = 100;
 var LEGEND_TITLE_SIZE = 15; // set in the .legend-title class
 var LEGEND_ENTRY_SIZE = 10;
 var LEGEND_PADDING = 15;
@@ -133,18 +133,18 @@ var LEGEND_CONTENTS = [
 	},
 	{
 		type   : 'icon',
-		link   : 'bat.png',
+		link   : 'running.png',
+		text   : 'Run WAR'
+	},
+	{
+		type   : 'icon',
+		link   : 'batting.png',
 		text   : 'Hit WAR'
 	},
 	{
 		type   : 'icon',
-		link   : 'glove.png',
+		link   : 'fielding.png',
 		text   : 'Field WAR'
-	},
-	{
-		type   : 'icon',
-		link   : 'boot.png',
-		text   : 'Run WAR'
 	}
 ];
 
@@ -679,17 +679,7 @@ var legend = d3.select('#nav')
 				.attr('width', LEGEND_WIDTH)
 				.attr('height', LEGEND_HEIGHT);
 
-// legend title
-var legendTitle = legend.append('text')
-						.attr('class', 'legend-title')
-						.attr('x', 0)
-						.attr('y', LEGEND_TITLE_SIZE)
-						.text('Legend');
-
-// center the legend title
-legendTitle.attr('x', (LEGEND_WIDTH - $(legendTitle.node()).width()) / 2);
-
-var yLegend = LEGEND_TITLE_SIZE + LEGEND_ENTRY_SIZE + LEGEND_INTERIOR_PADDING;
+var yLegend = LEGEND_ENTRY_SIZE + LEGEND_INTERIOR_PADDING;
 
 // add the legend contents
 $.each(LEGEND_CONTENTS, function(index, content) {
@@ -701,11 +691,6 @@ $.each(LEGEND_CONTENTS, function(index, content) {
 							.style('font-size', '9px')
 							.text(content.text));
 	} else if (content.type === 'line') {
-		adjustObjLoc(legend.append('text')
-							.attr('x', LEGEND_WIDTH / 2)
-							.attr('y', yLegend)
-							.attr('class', 'legend-content')
-							.text('='));
 		var line = legend.append('line')
 							.attr('x1', LEGEND_PADDING)
 							.attr('y1', yLegend - LEGEND_ENTRY_SIZE / 2)
@@ -722,17 +707,12 @@ $.each(LEGEND_CONTENTS, function(index, content) {
 				.attr('class', 'legend-content')
 				.text(content.text)
 	} else if (content.type === 'icon') {
-		adjustObjLoc(legend.append('text')
-							.attr('x', LEGEND_WIDTH / 2)
-							.attr('y', yLegend)
-							.attr('class', 'legend-content')
-							.text('='));
 		legend.append('image')
 				.attr('xlink:href', './images/icons/' + content.link)
-				.attr('x', LEGEND_WIDTH / 4)
-				.attr('y', yLegend - ICON_SIZE)
-				.attr('width', ICON_SIZE)
-				.attr('height', ICON_SIZE);
+				.attr('x', LEGEND_WIDTH / 4 - 5)
+				.attr('y', yLegend - ICON_SIZE * 1.25)
+				.attr('width', ICON_SIZE * 1.5)
+				.attr('height', ICON_SIZE * 1.5);
 		legend.append('text')
 				.attr('x', LEGEND_WIDTH / 2 + 8)
 				.attr('y', yLegend)
