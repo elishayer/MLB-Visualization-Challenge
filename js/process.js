@@ -341,14 +341,14 @@ var TEAM_IMAGES = {
         {
             minYear: 2000,
             maxYear: PRESENT_YEAR,
-            file: 'giants2000-present'
+            file: 'giants2000-pres'
         }
     ],
     SLB: [
         {
             minYear: 1916,
             maxYear: 1935,
-            file: 'stlouisbrowns1916-1635'
+            file: 'stlouisbrowns1916-1935'
         }
     ],
     SLM: [
@@ -462,7 +462,7 @@ function getTeamImage(team, year) {
 }
 
 // helper function to get the index of a name
-// assumes unique names -- safe assumption for this
+// assumes unique names -- safe assumption for this project
 function getNameIndex(key, name) {
     for (var i = 0; i < processed[key].length; i++) {
         if (processed[key][i].name === name) {

@@ -10,7 +10,7 @@
 // ======================================== Constants
 
 // Chart SVG size
-var CHART_WIDTH = 525;
+var CHART_WIDTH = 560;
 var CHART_HEIGHT = 250;
 
 // chart padding values
@@ -88,9 +88,15 @@ var WAR_INTERIOR_PADDING = 3;
 
 // image location and size
 var IMAGE_X = 10;
-var IMAGE_Y = 10;
+var IMAGE_Y = 5;
 var IMAGE_WIDTH = 80;
 var IMAGE_HEIGHT = 100;
+
+// team logo location and size
+var LOGO_SIZE = 20;
+var LOGO_INTERIOR_PADDING = 3;
+var LOGO_X = 10;
+var LOGO_Y = IMAGE_Y + IMAGE_HEIGHT + 5;
 
 // Award names and specifications
 var PITCHER_AWARDS = [{name: 'AS', key: 'as'}, {name: 'CY', key: 'cy'},
@@ -113,6 +119,7 @@ var LEGEND_TITLE_SIZE = 15; // set in the .legend-title class
 var LEGEND_ENTRY_SIZE = 10;
 var LEGEND_PADDING = 15;
 var LEGEND_INTERIOR_PADDING = 5;
+var LEGEND_ICON_SIZE = 15;
 var LEGEND_CONTENTS = [
 	{
 		type   : 'text',
@@ -209,11 +216,11 @@ var mainRow = d3.select('body')
 				.attr('class', 'container')
 				.append('div')
 				.attr('class', 'row');
-/*
+
 // Overview for the project
 mainRow.append('h1').text('Title');
 mainRow.append('p').text('This is where we explain the entry');
-*/
+
 // create two children from the main row: visualizations and navigation
 var visCol = mainRow.append('div').attr('class', 'col-sm-10').attr('id', 'vis');
 var navCol = mainRow.append('div').attr('class', 'col-sm-2').attr('id', 'nav');
@@ -227,6 +234,99 @@ var navCol = mainRow.append('div').attr('class', 'col-sm-2').attr('id', 'nav');
 function adjustObjLoc(obj, isY, halfWidths, padding) {
 	obj.attr((isY ? 'y' : 'x'), obj.attr((isY ? 'y' : 'x')) - (halfWidths ? halfWidths : 1) *
 		$(obj.node()).width() / 2 - -(padding ? padding : 0));
+}
+
+// helper function to get x coordinate
+function getX(radius, angle) {
+	return POLY_WIDTH / 2 + radius * Math.cos(angle);
+}
+
+// helper function to get y coordinate
+function getY(radius, angle) {
+	return (POLY_HEIGHT + POLY_TITLE_SIZE + POLY_TITLE_TOP_PADDING) / 2 +
+		radius * Math.sin(angle);
+}
+
+// helper function to add a point to a path
+function pathPt(radius, angle) {
+	return 'L' + getX(radius, angle) + ',' + getY(radius, angle);
+}
+
+// gets the WAR in a single record
+function getRecordWar(record, war) {
+	var sum = 0;
+	$.each(war, function(index, warType) {
+		sum += record[warType.key];
+	});
+	return sum;
+}
+
+// finds the key with the largest value of property prop in map
+function findLargestKey(map, prop) {
+	var largestKey = '';
+	var largestValue = -Infinity;
+	for (key in map) {
+		if (map[key][prop] > largestValue) {
+			largestKey = key;
+			largestValue = map[key][prop];
+		}
+	}
+	return largestKey;
+}
+
+// chooses the logo and color that best represents a set of years within a player's career
+// based on the logo for which the player accumulated the most WAR
+function chooseLogoAndColor(records, war) {
+	// a map to correspond a logo to the associated WAR and team
+	var map = {};
+	$.each(records, function(index, record) {
+		if (record.teamImage && map.hasOwnProperty(record.teamImage)) {
+			map[record.teamImage].war += getRecordWar(record, war);
+		} else if (record.teamImage) {
+			map[record.teamImage] = {
+				war   : getRecordWar(record, war),
+				color : record.teamColor
+			};
+		}
+	});
+	var largestKey = findLargestKey(map, 'war');
+	return {
+		logo  : largestKey,
+		color : map[largestKey].color
+	};
+}
+
+// helper function to adjust the location of the polygon label
+function adjustPolyLabelLoc(label, angle) {
+	// adjust x location
+
+	// if label is on the left, move one width left and add padding
+	if (Math.cos(angle) < -ZERO_EPSILON) {
+		adjustObjLoc(label, false, 2, -POLY_LABEL_PADDING);
+
+	// if label is on top/bottom, move half width left
+	} else if (Math.abs(Math.cos(angle)) < ZERO_EPSILON) {
+		adjustObjLoc(label);
+	
+	// if label is on the left, add padding.
+	// parseFloat to convert string to float, because .attr('y') returns string
+	// and the + operator concatenates rather than adds
+	} else { // TODO: convert to adjustObjLoc
+		//adjustObjLoc(label, false, 0, POLY_LABEL_PADDING);
+		label.attr('x', parseFloat(label.attr('x')) + POLY_LABEL_PADDING);
+	}
+
+	// adjust y location
+
+	// if label is on the top, add padding
+	if (Math.sin(angle) < 0) {
+		label.attr('y', label.attr('y') - POLY_LABEL_PADDING);
+
+	// if label is on bottom, adjust by font size and add padding
+	// same parseFloat rationale: convert from string to float to add rather than concatenate
+	} else {
+		label.attr('y', parseFloat(label.attr('y')) + POLY_LABEL_SIZE + POLY_LABEL_PADDING);
+	}
 }
 
 // ======================================== Visualization Function
@@ -257,6 +357,8 @@ function visualizeCareers(processedData, playerType, war, champ, age, awards, ba
 		// initalize a bootsrap row to hold all the relevant elements
 		var row = visCol.append('div')
 						.attr('id', playerData.id)
+						.attr('name', playerData.name)
+						.attr('position', playerType)
 						.attr('class', 'row player-vis');
 
 		// add a title corresponding to the player name
@@ -464,18 +566,8 @@ function visualizeCareers(processedData, playerType, war, champ, age, awards, ba
 						.attr('width', ICON_SIZE)
 						.attr('height', ICON_SIZE)
 				}
-
-				if (award.key === 'ws' && isWon) {
-					svg.append('image')
-						.attr('xlink:href', 'images/icons/' + award.key + '.png')
-						.attr('x', ageScale(record.age) - WS_ICON_SIZE / 2)
-						.attr('y', Math.max(warScale((playerType ===  'pitchers' ? Math.max(record.WARra9, record.WARfip) :
-							record['Value Batting'] + record['Value Fielding'] + record['Value Running']))
-							- WS_ICON_SIZE, CHART_TOP_PADDING))
-						.attr('width', WS_ICON_SIZE)
-						.attr('height', WS_ICON_SIZE)
-				}
 			});
+
 
 			// add in a separating line on top for all but the last award
 			if (awardIndex !== awards.length - 1) {
@@ -485,11 +577,24 @@ function visualizeCareers(processedData, playerType, war, champ, age, awards, ba
 					.attr('x2', ageScale(age.max))
 					.attr('y2', yAward + AWARD_INTERIOR_PADDING)
 					.style(DASHED_STYLE)
-
 			}
 
 			// update yAward for the next award
 			yAward += ICON_SIZE + AWARD_INTERIOR_PADDING;
+		});
+
+		// special world series icons
+		$.each(playerData.records, function(index, record) {
+			if (record['ws'] && record['ws'] != 'n/a') {
+				svg.append('image')
+					.attr('xlink:href', 'images/icons/ws.png')
+					.attr('x', ageScale(record.age) - WS_ICON_SIZE / 2)
+					.attr('y', Math.max(warScale((playerType ===  'pitchers' ? Math.max(record.WARra9, record.WARfip) :
+						record['Value Batting'] + record['Value Fielding'] + record['Value Running']))
+						- WS_ICON_SIZE, CHART_TOP_PADDING))
+					.attr('width', WS_ICON_SIZE)
+					.attr('height', WS_ICON_SIZE)
+			}
 		});
 
 		// ======================================== Polygon
@@ -499,22 +604,6 @@ function visualizeCareers(processedData, playerType, war, champ, age, awards, ba
 							.append('svg')
 							.attr('width', POLY_WIDTH)
 							.attr('height', POLY_HEIGHT);
-
-		// helper function to get x coordinate
-		function getX(radius, angle) {
-			return POLY_WIDTH / 2 + radius * Math.cos(angle);
-		}
-
-		// helper function to get y coordinate
-		function getY(radius, angle) {
-			return (POLY_HEIGHT + POLY_TITLE_SIZE + POLY_TITLE_TOP_PADDING) / 2 +
-				radius * Math.sin(angle);
-		}
-
-		// helper function to add a point to a path
-		function pathPt(radius, angle) {
-			return 'L' + getX(radius, angle) + ',' + getY(radius, angle);
-		}
 
 		// helper function for a SVG polygon path
 		function polygonPath(sides, radius) {
@@ -540,41 +629,8 @@ function visualizeCareers(processedData, playerType, war, champ, age, awards, ba
 					.attr('fill', 'none');
 		}
 
-		// helper function to adjust the location of the polygon label
-		function adjustPolyLabelLoc(label, angle) {
-			// adjust x location
-
-			// if label is on the left, move one width left and add padding
-			if (Math.cos(angle) < -ZERO_EPSILON) {
-				adjustObjLoc(label, false, 2, -POLY_LABEL_PADDING);
-
-			// if label is on top/bottom, move half width left
-			} else if (Math.abs(Math.cos(angle)) < ZERO_EPSILON) {
-				adjustObjLoc(label);
-			
-			// if label is on the left, add padding.
-			// parseFloat to convert string to float, because .attr('y') returns string
-			// and the + operator concatenates rather than adds
-			} else { // TODO: convert to adjustObjLoc
-				//adjustObjLoc(label, false, 0, POLY_LABEL_PADDING);
-				label.attr('x', parseFloat(label.attr('x')) + POLY_LABEL_PADDING);
-			}
-
-			// adjust y location
-
-			// if label is on the top, add padding
-			if (Math.sin(angle) < 0) {
-				label.attr('y', label.attr('y') - POLY_LABEL_PADDING);
-
-			// if label is on bottom, adjust by font size and add padding
-			// same parseFloat rationale: convert from string to float to add rather than concatenate
-			} else {
-				label.attr('y', parseFloat(label.attr('y')) + POLY_LABEL_SIZE + POLY_LABEL_PADDING);
-			}
-		}
-
 		// helper function to draw a skill polygon
-		function drawCareerSkillPolygon(skills, records) {
+		function drawCareerSkillPolygon(skills, records, color, name) {
 			var path = '';
 			var dRadians = 2 * Math.PI / POLY_SIDES;
 
@@ -583,6 +639,9 @@ function visualizeCareers(processedData, playerType, war, champ, age, awards, ba
 
 			// maximum radius, to edge of polygon
 			var maxR = NUM_POLY * POLY_D_RADIUS;
+
+			// create an array to hold the polygon labels
+			skillPolygons[name].labels = [];
 
 			// for each skill
 			$.each(skills, function(index, skill) {
@@ -602,22 +661,26 @@ function visualizeCareers(processedData, playerType, war, champ, age, awards, ba
 										.attr('class', 'polygon-label')
 										.attr('x', getX(maxR, angle))
 										.attr('y', getY(maxR, angle))
+										.attr('angle', angle)
 										.text(skill.name);
 
 				adjustPolyLabelLoc(polyLabel, angle);
+
+				// push the labels into the skillPolygon labels array
+				skillPolygons[name].labels.push(polyLabel);
 
 				// update the angle for the next skill
 				angle += dRadians;
 			});
 
 			// draw the skills polygon with color specified by the teams
-			return polySvg.append('path')
-							.attr('d', 'M' + path.substring(1) + 'Z')
-							.attr('stroke', POLY_SKILL_STROKE)
-							.attr('stroke-width', POLY_SKILL_STROKE_WIDTH)
-							.attr('fill', records[12].teamColor) // TODO: choose and get the correct index
-							.attr('stroke-opacity', POLY_SKILL_STROKE_WIDTH)
-							.attr('fill-opacity', POLY_SKILL_FILL_OPACITY);
+			skillPolygons[name].poly = polySvg.append('path')
+												.attr('d', 'M' + path.substring(1) + 'Z')
+												.attr('stroke', POLY_SKILL_STROKE)
+												.attr('stroke-width', POLY_SKILL_STROKE_WIDTH)
+												.attr('fill', color)
+												.attr('stroke-opacity', POLY_SKILL_STROKE_WIDTH)
+												.attr('fill-opacity', POLY_SKILL_FILL_OPACITY);
 		}
 
 		// draws the polygon and its title in its entirety
@@ -633,16 +696,21 @@ function visualizeCareers(processedData, playerType, war, champ, age, awards, ba
 			// adjust x position to center
 			polyTitle.attr('x', (POLY_WIDTH - $(polyTitle.node()).width()) / 2);
 
+			// add polyTitle to the new skillPolygons[name] object
+			skillPolygons[name] = {};
+			skillPolygons[name].title = polyTitle;
+
+			// get the logo and color representing the player's career
+			var logoAndColor = chooseLogoAndColor(records, war);
+
 			// add a key for the player to store the skill polygon for later access
-			skillPolygons[name] = {
-				image: polySvg.append('image')
-								.attr('xlink:href', records[10].teamImage) // TODO: choose and get correct index
-								.attr('x', (POLY_WIDTH - POLY_IMAGE_SIZE) / 2)
-								.attr('y', (POLY_HEIGHT - POLY_IMAGE_SIZE +
-									POLY_TITLE_TOP_PADDING + POLY_TITLE_SIZE) / 2)
-								.attr('width', POLY_IMAGE_SIZE)
-								.attr('height', POLY_IMAGE_SIZE)
-			};
+			skillPolygons[name].image = polySvg.append('image')
+												.attr('xlink:href', logoAndColor.logo)
+												.attr('x', (POLY_WIDTH - POLY_IMAGE_SIZE) / 2)
+												.attr('y', (POLY_HEIGHT - POLY_IMAGE_SIZE +
+													POLY_TITLE_TOP_PADDING + POLY_TITLE_SIZE) / 2)
+												.attr('width', POLY_IMAGE_SIZE)
+												.attr('height', POLY_IMAGE_SIZE);
 
 			// draw the regular polygons
 			for (var p = 0; p <= NUM_POLY; p++) {
@@ -656,7 +724,7 @@ function visualizeCareers(processedData, playerType, war, champ, age, awards, ba
 			}
 
 			// draw the skill polygon
-			skillPolygons[name].poly = drawCareerSkillPolygon(advanced, records);
+			drawCareerSkillPolygon(basic, records, logoAndColor.color, name);
 		}
 
 		// draw the polygon
@@ -665,9 +733,91 @@ function visualizeCareers(processedData, playerType, war, champ, age, awards, ba
 
 		// initialize a div to hold the interaction form
 		// export responsibility to make the form to the controller
-		//row.append('div').attr('class', 'col-sm-4 col-md-2 vis-form-wrapper');
+		row.append('div').attr('class', 'col-sm-4 col-md-2 vis-form-wrapper');
 		row.append('div').attr('class', 'col-xs-12').append('hr');
 
+		// ======================================== Team Logos
+		// get a map from team logo (file name) to years
+		function getLogoYearMap(records) {
+			var map = {};
+			$.each(records, function(index, record) {
+				if (record.teamImage && map.hasOwnProperty(record.teamImage)) {
+					map[record.teamImage].years.push(record.year);
+				} else if (record.teamImage) {
+					// an array for the years for which the logo applies
+					map[record.teamImage] = {
+						years : [record.year],
+						logo  : record.teamImage,
+						team  : record.team.substring(0, 3)
+					}
+				}
+			});
+			
+			for (logo in map) {
+				// sort each individual set of years within a logo
+		        map[logo].years = map[logo].years.sort(function(a, b) { return d3.ascending(a, b); });
+
+		        // mark the minYear and maxYear for each logo
+		        map[logo].minYear = map[logo].years[0];
+		        map[logo].maxYear = map[logo].years[map[logo].years.length - 1];
+			}
+			return map;
+		}
+
+		// recursively generate a string representing a set of sorted years
+		// returned as an array if there are multiple sets of years
+		function generateYearString(years) {
+			var string = '';
+			for (var i = 0; i < years.length; i++) {
+				if (i === 0) {
+					string += years[i];
+				} else if (i === years.length - 1) {
+					return string + '-' + years[i];
+				} else if (years[i] + 1 !== years[i + 1]) {
+					return [string + '-' + years[i], generateYearString(years.slice(i + 1))];
+				}
+			}
+			return string;
+		}
+
+		var logoYearMap = getLogoYearMap(playerData.records);
+
+		var yLogo = LOGO_Y;
+		$.each(logoYearMap, function(index, value) {
+			svg.append('image')
+				.attr('xlink:href', value.logo)
+				.attr('x', LOGO_X)
+				.attr('y', yLogo)
+				.attr('width', LOGO_SIZE)
+				.attr('height', LOGO_SIZE);
+
+			var text = generateYearString(value.years);
+
+			// if one set of years, put on the screen
+			if (typeof text === 'string') {
+				svg.append('text')
+					.attr('x', LOGO_X + LOGO_SIZE)
+					.attr('y', yLogo + LOGO_SIZE / 1.5)
+					.attr('class', 'logo-text')
+					.text(text);
+			// put on separate lines if an array
+			// assumes (correctly for this project) that no more than two stretches with a team
+			} else {
+				svg.append('text')
+					.attr('x', LOGO_X + LOGO_SIZE)
+					.attr('y', yLogo + LOGO_SIZE / 2)
+					.attr('class', 'logo-text')
+					.text(text[0]);
+
+				svg.append('text')
+					.attr('x', LOGO_X + LOGO_SIZE)
+					.attr('y', yLogo + LOGO_SIZE)
+					.attr('class', 'logo-text')
+					.text(text[1]);
+			}
+
+			yLogo += LOGO_SIZE + LOGO_INTERIOR_PADDING;
+		});
 	});
 }
 
@@ -711,8 +861,8 @@ $.each(LEGEND_CONTENTS, function(index, content) {
 				.attr('xlink:href', './images/icons/' + content.link)
 				.attr('x', LEGEND_WIDTH / 4 - 5)
 				.attr('y', yLegend - ICON_SIZE * 1.25)
-				.attr('width', ICON_SIZE * 1.5)
-				.attr('height', ICON_SIZE * 1.5);
+				.attr('width', LEGEND_ICON_SIZE)
+				.attr('height', LEGEND_ICON_SIZE);
 		legend.append('text')
 				.attr('x', LEGEND_WIDTH / 2 + 8)
 				.attr('y', yLegend)
@@ -729,5 +879,3 @@ visualizeCareers(processed.pitchers, 'pitchers', PITCHER_WAR, PITCHER_CHAMP_STAT
 	PITCHER_AWARDS, PITCHER_STATS_BASIC, PITCHER_STATS_ADV, false);
 visualizeCareers(processed.hitters, 'hitters', HITTER_WAR, HITTER_CHAMP_STATS, HITTER_AGE_BOUNDS,
 	HITTER_AWARDS, HITTER_STATS_BASIC, HITTER_STATS_ADV, true);
-
-// ======================================== Navigation Column

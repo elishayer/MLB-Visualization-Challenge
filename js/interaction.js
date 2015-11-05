@@ -33,6 +33,10 @@ for (playerType in processed) {
 }
 
 // ======================================== Visualization Manipulation Forms
+// -------------------- Constants
+// animation length
+var ANIMATION_LENGTH = 1000;
+
 // radio options for the visualization forms
 var RADIO_OPTIONS = [
 	{
@@ -44,7 +48,25 @@ var RADIO_OPTIONS = [
 		label: 'Advanced Stats'
 	}
 ];
-/*
+
+// map from radio button value and position to set of stats
+SKILLS_MAP = {
+	a : {
+		hitters  : HITTER_STATS_ADV,
+		pitchers : PITCHER_STATS_ADV
+	},
+	b : {
+		hitters  : HITTER_STATS_BASIC,
+		pitchers : PITCHER_STATS_BASIC
+	}
+}
+
+// map from position to WAR specifications
+WAR_MAP = {
+	hitters  : HITTER_WAR,
+	pitchers : PITCHER_WAR
+}
+
 // for each player's form-wrapper, create a form
 $.each($('.vis-form-wrapper'), function(index, formWrapper) {
 	// add a title to the form wrapper
@@ -74,7 +96,7 @@ $.each($('.vis-form-wrapper'), function(index, formWrapper) {
 
 	// add a seperator
 	$('<hr>').appendTo(formWrapper);
-});*/
+});
 
 // ======================================== Form Event Listeners
 // radio button listener
@@ -83,8 +105,31 @@ $('input').change(function(event) {
 	var $this = $(this);
 
 	// collect event information
-	var name = $this.attr('name').substring(0, $this.attr('name').indexOf('-'));
+	var name = $this.parents('.player-vis').attr('name');
+	var position = $this.parents('.player-vis').attr('position');
 	var value = $this.attr('value');
+	var playerIndex = getNameIndex(position, name);
+
+	// get records, skills, and war parameters from the event information
+	var skills = SKILLS_MAP[value][position];
+	var records = processed[position][playerIndex].records;
+	var war = WAR_MAP[position];
+
+	// get the d attribute for the skills polygon
+	var d = getPolygonPath(skills, records);
+
+	// get the logo and color
+	var logoAndColor = chooseLogoAndColor(records, war);
+
+	// update the skill polygon in a one second animation
+	skillPolygons[name].poly.transition()
+							.duration(ANIMATION_LENGTH)
+							.attr('d', d);
+
+	// update each label
+	$.each(skillPolygons[name].labels, function(index, label) {
+		label.text(skills[index].name);
+	});
 });
 
 // ======================================== Player List Interaction
@@ -202,3 +247,34 @@ $window.scroll(function () {
 		}
 	}
 });
+
+// ======================================== Polygon Editing Functions
+function getPolygonPath(skills, records) {
+	var path = '';
+	var dRadians = 2 * Math.PI / POLY_SIDES;
+
+	// straight upwards
+	var angle = -Math.PI / 2;
+
+	// maximum radius, to edge of polygon
+	var maxR = NUM_POLY * POLY_D_RADIUS;
+
+	// for each skill
+	$.each(skills, function(index, skill) {
+		var scale = d3.scale.linear()
+							// average all means and bests in the career years
+							.domain([d3.mean(records, function(d) { return d[skill.key + 'mean']; }),
+								d3.mean(records, function(d) { return d[skill.key + 'best']; })])
+							.range([maxR / 2, maxR]);
+
+		// insure that all radii are in the range [0, maxR]
+		// take the average over the career
+		path += pathPt(Math.min(Math.max(0, scale(
+			d3.mean(records, function(d) { return d[skill.key]; }))), maxR), angle);
+
+		// update the angle for the next skill
+		angle += dRadians;
+	});
+
+	return 'M' + path.substring(1) + 'Z';
+}
