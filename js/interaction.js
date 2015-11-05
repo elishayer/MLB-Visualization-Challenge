@@ -95,25 +95,94 @@ $.each($('.vis-form-wrapper'), function(index, formWrapper) {
 	$('.radio-b').prop('checked', true);
 
 	// add a seperator
-	$('<hr>').appendTo(formWrapper);
+	$('<hr>').attr('class', 'small').appendTo(formWrapper);
+
+	// slider contents
+	var name = $(formWrapper).parents('.player-vis').attr('name');
+	var position = $(formWrapper).parents('.player-vis').attr('position');
+
+	var playerData = processed[position][getNameIndex(position, name)];
+
+	// label, select, and option elements for the interaction form
+	$('<label>').text('Starting Year').appendTo(formWrapper);
+	var minSelect = $('<select>').attr('type', 'min').attr('id', playerId + '-start').appendTo(formWrapper);
+	$('<label>').text('Ending Year').appendTo(formWrapper);
+	var maxSelect = $('<select>').attr('type', 'max').attr('id', playerId + '-end').appendTo(formWrapper);
+	for (var year = playerData.minYear; year <= playerData.maxYear; year++) {
+		$('<option>').attr('value', year).text(year).appendTo(minSelect);
+		$('<option>').attr('value', year).text(year).prependTo(maxSelect);
+	}
+
+	// add a seperator
+	$('<hr>').attr('class', 'small').appendTo(formWrapper);
+
+	// reset button
+	$('<button>').text('Reset to Career').appendTo(formWrapper);
 });
 
 // ======================================== Form Event Listeners
 // radio button listener
 $('input').change(function(event) {
-	// cache jQuery event
+	polyListener($(this).parents('.player-vis'));
+});
+
+$('select').change(function(event) {
 	var $this = $(this);
+	var type = $this.attr('type');
+
+	var year = $this.val();
+
+	var otherType = type === 'max' ? 'min' : 'max';
+	$this.parent().find('select[type="' + otherType + '"] option').attr('disabled', function(i, val) {
+		return (type === 'min' && $(this).val() < year) || (type === 'max' && $(this).val() > year);
+	});
+
+	polyListener($this.parents('.player-vis'));
+});
+
+$('button').click(function(event) {
+	var $parent = $(this).parents('.player-vis');
 
 	// collect event information
-	var name = $this.parents('.player-vis').attr('name');
-	var position = $this.parents('.player-vis').attr('position');
-	var value = $this.attr('value');
-	var playerIndex = getNameIndex(position, name);
+	var name = $parent.attr('name');
+	var position = $parent.attr('position');
+	var playerData = processed[position][getNameIndex(position, name)];
 
-	// get records, skills, and war parameters from the event information
-	var skills = SKILLS_MAP[value][position];
-	var records = processed[position][playerIndex].records;
+	// reset selectors to full range of dates
+	$parent.find('select[type="min"]').val(playerData.minYear);
+	$parent.find('select[type="max"]').val(playerData.maxYear);
+
+	// enable all options of select element
+	$parent.find('select option').attr('disabled', false);
+
+	// reset display to career data
+	polyListener($parent);
+});
+
+function polyListener($parent) {
+	// collect event information
+	var name = $parent.attr('name');
+	var position = $parent.attr('position');
+	var type = $parent.find('input[type="radio"]:checked').val();
+
+	// get years from select elements and convert to ints
+	var minYear = parseInt($parent.find('select[type="min"]').val());
+	var maxYear = parseInt($parent.find('select[type="max"]').val());
+
+	// get records, skills, and war parameters from the input and select data
+	var skills = SKILLS_MAP[type][position];
+	var playerData = processed[position][getNameIndex(position, name)];
 	var war = WAR_MAP[position];
+
+	// get the indices in the records, with startIndex not found resulting in 0
+	var startIndex = Math.max(getIndexByYear(playerData.records, minYear), 0);
+	var finalIndex = getIndexByYear(playerData.records, maxYear);
+
+	// if finalIndex isn't found or is the highest index, take records through the end
+	var records = finalIndex !== NOT_FOUND_SENTINEL && maxYear !== playerData.maxYear ?
+		// plus one to account for slice being exclusionary
+		playerData.records.slice(startIndex, finalIndex + 1) :
+		playerData.records.slice(startIndex);
 
 	// get the d attribute for the skills polygon
 	var d = getPolygonPath(skills, records);
@@ -121,16 +190,32 @@ $('input').change(function(event) {
 	// get the logo and color
 	var logoAndColor = chooseLogoAndColor(records, war);
 
-	// update the skill polygon in a one second animation
+	// update the skill polygon shape and color with animation
 	skillPolygons[name].poly.transition()
 							.duration(ANIMATION_LENGTH)
+							.attr('fill', logoAndColor.color)
 							.attr('d', d);
+
+	// update the skill polygon icon
+	skillPolygons[name].image.attr('xlink:href', logoAndColor.logo);
+
+	// update the skill polygon title and adjust back to the middle
+	var titleText = 'Skills Polygon: ';
+	if (minYear === playerData.minYear && maxYear === playerData.maxYear) {
+		titleText += 'Career';
+	} else {
+		titleText += minYear + '-' + maxYear;
+	}
+	skillPolygons[name].title.text(titleText);
+	skillPolygons[name].title.attr('x', (POLY_WIDTH - $(skillPolygons[name].title.node()).width()) / 2);
 
 	// update each label
 	$.each(skillPolygons[name].labels, function(index, label) {
-		label.text(skills[index].name);
+		adjustPolyLabelLoc(label.attr('x', getX(NUM_POLY * POLY_D_RADIUS, label.attr('angle')))
+								.attr('y', getY(NUM_POLY * POLY_D_RADIUS, label.attr('angle')))
+				.text(skills[index].name), label.attr('angle'));
 	});
-});
+}
 
 // ======================================== Player List Interaction
 
@@ -249,7 +334,16 @@ $window.scroll(function () {
 });
 
 // ======================================== Polygon Editing Functions
-function getPolygonPath(skills, records) {
+function getIndexByYear(records, year) {
+	for (var i = 0; i < records.length; i++) {
+		if (records[i].year === year) {
+			return i;
+		}
+	}
+	return NOT_FOUND_SENTINEL;
+}
+
+function getPolygonPath(skills, records, minYear, maxYear) {
 	var path = '';
 	var dRadians = 2 * Math.PI / POLY_SIDES;
 
@@ -262,7 +356,7 @@ function getPolygonPath(skills, records) {
 	// for each skill
 	$.each(skills, function(index, skill) {
 		var scale = d3.scale.linear()
-							// average all means and bests in the career years
+							// average all means and bests in the records
 							.domain([d3.mean(records, function(d) { return d[skill.key + 'mean']; }),
 								d3.mean(records, function(d) { return d[skill.key + 'best']; })])
 							.range([maxR / 2, maxR]);
