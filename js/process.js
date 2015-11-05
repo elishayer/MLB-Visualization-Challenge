@@ -483,11 +483,14 @@ var HITTER_AGE_BOUNDS = {
     max: 43
 }
 
+var PITCHER_WAR_STATS = ['WARra9', 'WARfip'];
+var HITTER_WAR_STATS = ['Value Batting', 'Value Fielding', 'Value Running'];
+
 // helper function to find whether a record exists for a certain age
-function isAgeRecordContained(playerData, age) {
+function isAgeRecordContained(records, age) {
     var ageRecordContained = false;
-    $.each(playerData.records, function(index, record) {
-        if (record.age === age) {
+    $.each(records, function(index, record) {
+        if (record.age && record.age === age) {
             ageRecordContained = true;
         }
     });
@@ -495,8 +498,18 @@ function isAgeRecordContained(playerData, age) {
     return ageRecordContained;
 }
 
+// helper function to construct an empty year
+function makeEmptyYear(stats, age) {
+    empty = {};
+    $.each(stats, function(index, stat) {
+        empty[stat] = 0;
+    });
+    empty.age = age;
+    return empty;
+}
+
 // function to process the data
-function processData(dataset, key, ageBounds, emptyYear) {
+function processData(dataset, key, ageBounds, warStats) {
     $.each(dataset, function(index, record) {
 
         // get the index of the player by name
@@ -537,24 +550,28 @@ function processData(dataset, key, ageBounds, emptyYear) {
             }
         }
     });
-/*
+
     // add in zeroed data for all ages if no record exists
     for (var i = 0; i < processed[key].length; i++) {
+        // for each possible age
         for (var age = ageBounds.min; age <= ageBounds.max; age++) {
-            if (!isAgeRecordContained(processed[key][i], age)) {
-                processed[key][i].records.push(emptyYear);
+            // if there is no record for that year
+            if (!isAgeRecordContained(processed[key][i].records, age)) {
+                // construct the empty record and push it in to the list of records
+                processed[key][i].records.push(makeEmptyYear(warStats, age));
             }
         }
 
         // sort the data by age
-        processed[key][i] = processed[key][i].sort(function(a, b) { return d3.ascending(a.age, b.age); });
+        processed[key][i].records = processed[key][i].records.sort(function(a, b) {
+            return d3.ascending(a.age, b.age);
+        });
     }
-*/
 }
 
 // process each dataset
-processData(pitcherData, 'pitchers', PITCHER_AGE_BOUNDS, {WARra9: 0, WARfip: 0});
-processData(hitterData, 'hitters', HITTER_AGE_BOUNDS, {"Value Batting": 0, "Value Fielding": 0, "Value Running": 0});
+processData(pitcherData, 'pitchers', PITCHER_AGE_BOUNDS, PITCHER_WAR_STATS);
+processData(hitterData, 'hitters', HITTER_AGE_BOUNDS, HITTER_WAR_STATS);
 
 // convert runs to WAR for hitter data for the following fields
 var conversionStats = ['Batting', 'Running', 'Fielding'];

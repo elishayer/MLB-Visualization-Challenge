@@ -11,10 +11,11 @@
 var playerList = navCol.append('ul').attr('class', 'players-list');
 
 // helper function to create an li tag > a tag with an href, class, and text
-function createLinkLi(text, liClass, liId, href) {
+function createLinkLi(playerType, text, liClass, liId, href) {
 	playerList.append('li')
 				.attr('class', liClass)
 				.attr('id', liId)
+				.attr('parent', playerType + '-li')
 				.append('a')
 				.attr('href', '#' + href)
 				.text(text);
@@ -23,11 +24,11 @@ function createLinkLi(text, liClass, liId, href) {
 // for both hitters and pitchers
 for (playerType in processed) {
 	// add a player category li to the ul
-	createLinkLi(playerType, 'nav-category', playerType + '-li', playerType + '-vis');
+	createLinkLi(playerType, playerType, 'nav-category', playerType + '-li', playerType + '-vis');
 
 	// add an individual player li to the ul
 	$.each(processed[playerType], function(index, player) {
-		createLinkLi(player.name, 'nav-player', player.id + '-li', player.id);
+		createLinkLi(playerType, player.name, 'nav-player', player.id + '-li', player.id);
 	});
 }
 
@@ -54,12 +55,24 @@ $.each($('.vis-form-wrapper'), function(index, formWrapper) {
 
 	// for each radio option
 	$.each(RADIO_OPTIONS, function(index, option) {
-		// create a radio wrapper
-		var radioWrapper = $('<div>').addClass('radio').appendTo(formWrapper);
+		// create a radio wrapper with input and input children
+		var radioWrapper = $('<div>').addClass('radio')
+										.appendTo(formWrapper);
 		var label = $('<label>').appendTo(radioWrapper);
-		$('<input>').attr('type', 'radio').attr('value', option.value).attr('name', 'TODO').appendTo(label);
+		var input = $('<input>').attr('type', 'radio')
+								.attr('value', option.value)
+								.attr('name', playerId + '-radio')
+								.attr('class', 'radio-' + option.value)
+								.appendTo(label);
+
+		// add text to the label
 		label.html(label.html() + option.label);
+
 	});
+	// initialize the 'basic' input to selected
+	$('.radio-b').prop('checked', true);
+
+
 
 	// add a seperator
 	$('<hr>').appendTo(formWrapper);
@@ -77,10 +90,10 @@ var BUFFER_TOP = 10;
 var BUFFER_VIEW = 200;
 
 // selected class name
-var selectedClass = "active-li";
+var selectedClass = 'active-li';
 
 // find the top and bottom players
-var $allPlayers = $(".player-vis");
+var $allPlayers = $('.player-vis');
 var $firstPlayer = $($allPlayers[0]);
 var $lastPlayer = $($allPlayers[$allPlayers.length - 1]);
 
@@ -99,7 +112,7 @@ setBreakpoints();
 $(window).resize(setBreakpoints);
 
 // cache jQuery objects for efficiency
-var $playersList = $(".players-list");
+var $playersList = $('.players-list');
 var $window = $(window);
 
 // respond every time a scroll occurs
@@ -109,32 +122,33 @@ $window.scroll(function () {
 	// if above all players, normal position and no players are selected
 	if (screenTop < preBreakpoint) {
 		$playersList.css({
-			position: "relative",
-			top: ""
+			position: 'relative',
+			top: ''
 		});
-		$("." + selectedClass).toggleClass(selectedClass, false);
+		$('.' + selectedClass).toggleClass(selectedClass, false);
 	// if below all players, lock the list into place at the bottom
 	} else if (screenTop > $lastPlayer.offset().top) {
 		$playersList.css({
-			position: "relative",
+			position: 'relative',
 			top: bottomBreakpoint - preBreakpoint
 		});
 	// if viewing players, make the list fixed and set one player as active
 	} else { 
 		$playersList.css({
-			position: "fixed",
+			position: 'fixed',
 			top: BUFFER_TOP
 		});
-		// if screen is at the bottom, set the last player to active
+		// if screen is at the bottom, set the last player to active and its parent
 		// buffer of 1 pixel for rounding
 		if($(document).height() - $window.scrollTop() - $window.height() <= 1) {
-			$("." + selectedClass).toggleClass(selectedClass, false);
-			$("#" + $lastPlayer[0].id + "-li").toggleClass(selectedClass, true);
+			$('.' + selectedClass).toggleClass(selectedClass, false);
+			$('#' + $lastPlayer[0].id + '-li').toggleClass(selectedClass, true);
+			$('#hitters-li').toggleClass(selectedClass, true);
 		}
 		// if above all players, nothing is active
 		else if (screenTop < topBreakpoint) {
 			// remove the selection from anything currently selected
-			$("." + selectedClass).toggleClass(selectedClass, false);
+			$('.' + selectedClass).toggleClass(selectedClass, false);
 		} else {
 			// set the active player
 			var activePlayerSet = false;
@@ -151,12 +165,13 @@ $window.scroll(function () {
 					// if the current player is the viewed player
 					if ($player.offset().top + $player.outerHeight() > screenTop + BUFFER_VIEW) {
 						// cache the id of the player in the ul list
-						var listId = "#" + id + "-li";
+						var listId = '#' + id + '-li';
 
 						// protect against setting the current player when it would result in no change
 						if (!$(listId).hasClass(selectedClass)) {
-							$("." + selectedClass).toggleClass(selectedClass, false);
+							$('.' + selectedClass).toggleClass(selectedClass, false);
 							$(listId).toggleClass(selectedClass, true);
+							$('#' + $(listId).attr('parent')).toggleClass(selectedClass, true);
 						}
 						activePlayerSet = true;	
 					}
