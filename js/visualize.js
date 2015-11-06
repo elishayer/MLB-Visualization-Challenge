@@ -244,7 +244,7 @@ var mainRow = d3.select('body')
 // Overview for the project
 mainRow.append('h1').text('Major League Data Challenge 2015 Submission');
 mainRow.append('h2').text('Eli Shayer, Ryan Chen, Stephen Spears, Daniel Alvarado and Scott Powers');
-mainRow.append('p').html("In October, Graphicacy challenged the internet to visualize the careers of the 20 greatest baseball players of all time. Below is our submission, done primarily in D3. For each player we plot his WAR by season, also noting World Series, awards and stat titles won. For pitchers we show both RA9 WAR and FIP WAR (a more stable estimate of the pitcher's true talent) from ages 19 to 44. For batters we break down WAR into its fielding, hitting and running components from ages 18 to 43. Our interactive skills polygons allow you select any year or range of years on which to compare players' skills, using either basic or advanced stats. All data come from <a href=" + '"http://www.baseball-reference.com/" target="_new"' + '>Baseball-Reference.com</a> and <a href="http://www.fangraphs.com/" target="_new">FanGraphs.com</a>.');
+mainRow.append('p').html("In October, Graphicacy challenged the internet to visualize the careers of the 20 greatest baseball players of all time. Below is our submission, created primarily using the JavaScript library D3. For each player, we plot his WAR by season, and note World Series, awards, and stat titles won. For pitchers, we show both RA9 WAR and FIP WAR (a more stable estimate of the pitcher's true talent) from ages 19 to 44. For hitters, we break down WAR into its fielding, hitting, and running components from ages 18 to 43. Our interactive skills polygons allow you to select any year or range of years on which to compare players' skills, using either basic or advanced stats. The outer vertices of the polygons represent the league leaders over that time and the blue polygon within similarly represents the league average.  All data come from <a href=" + '"http://www.baseball-reference.com/" target="_new"' + '>Baseball-Reference.com</a> and <a href="http://www.fangraphs.com/" target="_new">FanGraphs.com</a>. All logos come from <a href="http://www.sportslogos.net/" target="_new">SportsLogos.net</a>.');
 
 // create two children from the main row: visualizations and navigation
 var visCol = mainRow.append('div').attr('class', 'col-sm-10').attr('id', 'vis');
@@ -741,29 +741,37 @@ function visualizeCareers(processedData, playerType, war, champ, age, awards, ba
 		row.append('div').attr('class', 'col-xs-12').append('hr');
 
 		// ======================================== Team Logos
-		// get a map from team logo (file name) to years
-		function getLogoYearMap(records) {
+		// helper function to ensure that NYG and SFG go to the same logo
+		function getTeamName(teamName) {
+			return teamName.substring(0, 3) === 'NYG' ? 'SFG' : teamName.substring(0, 3);
+		}
+
+		// get a map from team team (file name) to years
+		function getTeamYearMap(records) {
 			var map = {};
 			$.each(records, function(index, record) {
-				if (record.teamImage && map.hasOwnProperty(record.teamImage)) {
-					map[record.teamImage].years.push(record.year);
-				} else if (record.teamImage) {
-					// an array for the years for which the logo applies
-					map[record.teamImage] = {
-						years : [record.year],
-						logo  : record.teamImage,
-						team  : record.team.substring(0, 3)
+				if (record.team && map.hasOwnProperty(getTeamName(record.team))) {
+					map[getTeamName(record.team)].years.push(record.year);
+				} else if (record.team) {
+					// an array for the years for which the team applies
+					map[getTeamName(record.team)] = {
+						years     : [record.year],
+						team      : getTeamName(record.team),
+						lastIndex : index
 					}
 				}
 			});
 			
-			for (logo in map) {
-				// sort each individual set of years within a logo
-		        map[logo].years = map[logo].years.sort(function(a, b) { return d3.ascending(a, b); });
+			for (team in map) {
+				// sort each individual set of years within a team
+		        map[team].years = map[team].years.sort(function(a, b) { return d3.ascending(a, b); });
 
-		        // mark the minYear and maxYear for each logo
-		        map[logo].minYear = map[logo].years[0];
-		        map[logo].maxYear = map[logo].years[map[logo].years.length - 1];
+		        // mark the minYear and maxYear for each team
+		        map[team].minYear = map[team].years[0];
+		        map[team].maxYear = map[team].years[map[team].years.length - 1];
+
+		        // set the logo based on the last year with the team
+		        map[team].logo = records[map[team].lastIndex].teamImage;
 			}
 			return map;
 		}
@@ -784,7 +792,7 @@ function visualizeCareers(processedData, playerType, war, champ, age, awards, ba
 			return string;
 		}
 
-		var logoYearMap = getLogoYearMap(playerData.records);
+		var logoYearMap = getTeamYearMap(playerData.records);
 
 		var yLogo = LOGO_Y;
 		$.each(logoYearMap, function(index, value) {
