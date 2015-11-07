@@ -215,15 +215,15 @@ var POLY_SKILL_FILL_OPACITY = 0.7;
 var PITCHER_STATS_BASIC = [{name: 'Wins', key: 'W'}, {name: 'ERA', key: 'ERA'},
 	{name: 'BAA', key: 'AVG'}, {name: 'SO', key: 'SO'},
 	{name: 'IP', key: 'IP'}, {name: 'FP', key: 'FP'}];
-var PITCHER_STATS_ADV = [{name: 'K/BB', key: 'KBB'}, {name: 'HR/9', key: 'HR9'},
-	{name: 'BABIP', key: 'BABIP'}, {name: 'FIP', key: 'FIP'},
+var PITCHER_STATS_ADV = [{name: 'HR/9', key: 'HR9'}, {name: 'FIP', key: 'FIP'},
+	 {name: 'BABIP', key: 'BABIP'}, {name: 'K/BB', key: 'KBB'}, 
 	{name: 'TBF', key: 'TBF'}, {name: 'TZ', key: 'TZ'}];
 var HITTER_STATS_BASIC = [{name: 'AVG', key: 'AVG'}, {name: 'HR', key: 'HR'},
 	{name: 'RBI', key: 'RBI'}, {name: 'Runs', key: 'R'},
 	{name: 'SB', key: 'SB'}, {name: 'FP', key: 'FP'}];
-var HITTER_STATS_ADV = [{name: 'OBP', key: 'OBP'}, {name: 'SLG', key: 'SLG'},
-	{name: 'BsR', key: 'BSR'}, {name: 'BB/K', key: 'BBK'},
-	{name: 'TZ', key: 'TZ'}, {name: 'BABIP', key: 'BABIP'}];
+var HITTER_STATS_ADV = [{name: 'BABIP', key: 'BABIP'}, {name: 'SLG', key: 'SLG'},
+	{name: 'BB/K', key: 'BBK'}, {name: 'OBP', key: 'OBP'},
+	{name: 'BsR', key: 'BSR'}, {name: 'TZ', key: 'TZ'}];
 
 // Polygon label
 var POLY_LABEL_PADDING = 3;
@@ -341,8 +341,7 @@ function adjustPolyLabelLoc(label, angle) {
 	// if label is on the left, add padding.
 	// parseFloat to convert string to float, because .attr('y') returns string
 	// and the + operator concatenates rather than adds
-	} else { // TODO: convert to adjustObjLoc
-		//adjustObjLoc(label, false, 0, POLY_LABEL_PADDING);
+	} else {
 		label.attr('x', parseFloat(label.attr('x')) + POLY_LABEL_PADDING);
 	}
 
@@ -654,6 +653,9 @@ function visualizeCareers(processedData, playerType, war, champ, age, awards, ba
 			// create an array to hold the polygon labels
 			skillPolygons[name].labels = [];
 
+			// reduce records to only those in which they played (had a team)
+			records = records.filter(function(record) { return record.team; });
+
 			// for each skill
 			$.each(skills, function(index, skill) {
 				var scale = d3.scale.linear()
@@ -739,7 +741,6 @@ function visualizeCareers(processedData, playerType, war, champ, age, awards, ba
 		}
 
 		// draw the polygon
-		// TODO: make flexible between single year, range, and career
 		drawPolygon(playerData.name, playerData.records);
 
 		// initialize a div to hold the interaction form
