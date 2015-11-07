@@ -108,6 +108,11 @@ var IMAGE_Y = 5;
 var IMAGE_WIDTH = 70;
 var IMAGE_HEIGHT = 100;
 
+// position note size
+var POSITION_NOTE_AREA_SIZE = 20;
+var POSITION_NOTE_SIZE = 12;   // set in the .position-text class
+var POSITION_NOTE_PADDING = 5;
+
 // team logo location and size
 var LOGO_SIZE = 20;
 var LOGO_INTERIOR_PADDING = 3;
@@ -781,21 +786,42 @@ function visualizeCareers(processedData, playerType, war, champ, age, awards, ba
 		// get most common position
 		function getPosition(records) {
 			var map = {};
-			console.log(records.name);
 			$.each(records, function(index, record) {
-				console.log(record.position);
-			/*
-				if (record.position && map.hasOwnProperty(getTeamName(record.team))) {
-					map[getTeamName(record.team)].years.push(record.year);
-				} else if (record.team) {
-					// an array for the years for which the team applies
-					map[getTeamName(record.team)] = {
-						years     : [record.year],
-						team      : getTeamName(record.team),
-						lastIndex : index
+				if (record.position && record.position.length) {
+					for (var i = 1; i <= 9; i++) {
+						if (record.position.indexOf(i) !== NOT_FOUND_SENTINEL) {
+							if (map[i]) {
+								map[i]++;
+							} else {
+								map[i] = 1;
+							}
+						}
 					}
-				}*/
+				}
 			});
+			
+			var topPosition = 0;
+			var topNumberOfYears = 0;
+			// find the most common position, favoring higher numbered positions in ties
+			for (var i = 1; i <= 9; i++) {
+				if (map[i] && map[i] >= topNumberOfYears) {
+					topPosition = i;
+					topNumberOfYears = map[i];
+				}
+			}
+
+			// translate from numberical position to textual position
+			switch (topPosition) {
+				case 1: return 'Pitcher';
+				case 2: return 'Catcher';
+				case 3: return 'First Baseman';
+				case 4: return 'Second Baseman';
+				case 5: return 'Third Baseman';
+				case 6: return 'Shortstop';
+				case 7: return 'Left Fielder';
+				case 8: return 'Center Fielder';
+				case 9: return 'Right Fielder';
+			}
 		}
 
 		// recursively generate a string representing a set of sorted years
@@ -814,12 +840,20 @@ function visualizeCareers(processedData, playerType, war, champ, age, awards, ba
 			return string;
 		}
 
+		var yLogo = LOGO_Y;
 
-		// get the most common position of the position of 
-		getPosition(playerData.records);
+		// for hitters only give the most common position
+		if (playerType === 'hitters') {
+			adjustObjLoc(svg.append('text')
+							.attr('x', IMAGE_X + IMAGE_WIDTH / 2)
+							.attr('y', yLogo + POSITION_NOTE_SIZE)
+							.attr('class', 'position-text')
+							.text(getPosition(playerData.records)));
+			yLogo += POSITION_NOTE_AREA_SIZE;
+		}
+
 		var logoYearMap = getTeamYearMap(playerData.records);		
 
-		var yLogo = LOGO_Y;
 		$.each(logoYearMap, function(index, value) {
 			svg.append('image')
 				.attr('xlink:href', value.logo)
