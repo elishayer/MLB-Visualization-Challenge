@@ -193,7 +193,7 @@ function polyListener($parent) {
 		playerData.records.slice(startIndex, finalIndex + 1) :
 		playerData.records.slice(startIndex);
 
-	
+
 	// reduce records to only those in which they played (had a team)
 	records = records.filter(function(record) { return record.team; });
 
@@ -201,7 +201,7 @@ function polyListener($parent) {
 	var d = getPolygonPath(skills, records, minYear, maxYear);
 
 	// get the logo and color
-	var logoAndColor = chooseLogoAndColor(records, war);
+	var logoAndColor = chooseLogoAndColor(records, war, playerData.teamYearMap);
 
 	// update the skill polygon shape and color with animation
 	skillPolygons[name].poly.transition()

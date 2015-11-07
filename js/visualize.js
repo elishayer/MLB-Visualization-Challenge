@@ -317,8 +317,6 @@ function chooseLogoAndColor(records, war, teamYearMap) {
 		}
 	});
 	var team = findLargestKey(map);
-	console.log(team);
-	console.log(teamYearMap[team]);
 	return teamYearMap[team];
 }
 
