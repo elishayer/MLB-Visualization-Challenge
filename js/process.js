@@ -443,7 +443,7 @@ function getTeamColor(team) {
         case 'STL': return '#c41e3a';
         case 'TOR': return '#003da5';
         case 'WSH': return '#ba122b';
-        default: return '#ffffff';
+        default: return '#0000ff'; // blue as default
     }
 }
 

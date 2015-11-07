@@ -186,8 +186,6 @@ function polyListener($parent) {
 	// get the indices in the records, with startIndex not found resulting in 0
 	var startIndex = Math.max(getIndexByYear(playerData.records, minYear), 0);
 	var finalIndex = getIndexByYear(playerData.records, maxYear);
-	console.log([minYear, maxYear]);
-	console.log([startIndex, finalIndex]);
 
 	// if finalIndex isn't found or is the highest index, take records through the end
 	var records = finalIndex !== NOT_FOUND_SENTINEL && maxYear !== playerData.maxYear ?
