@@ -291,14 +291,14 @@ function getRecordWar(record, war) {
 	return sum;
 }
 
-// finds the key with the largest value of property prop in map
-function findLargestKey(map, prop) {
+// finds the key with the largest value in map
+function findLargestKey(map) {
 	var largestKey = '';
 	var largestValue = -Infinity;
 	for (key in map) {
-		if (map[key][prop] > largestValue) {
+		if (map[key] > largestValue) {
 			largestKey = key;
-			largestValue = map[key][prop];
+			largestValue = map[key];
 		}
 	}
 	return largestKey;
@@ -306,24 +306,20 @@ function findLargestKey(map, prop) {
 
 // chooses the logo and color that best represents a set of years within a player's career
 // based on the logo for which the player accumulated the most WAR
-function chooseLogoAndColor(records, war) {
+function chooseLogoAndColor(records, war, teamYearMap) {
 	// a map to correspond a logo to the associated WAR and team
 	var map = {};
 	$.each(records, function(index, record) {
-		if (record.teamImage && map.hasOwnProperty(record.teamImage)) {
-			map[record.teamImage].war += getRecordWar(record, war);
-		} else if (record.teamImage) {
-			map[record.teamImage] = {
-				war   : getRecordWar(record, war),
-				color : record.teamColor
-			};
+		if (record.team && map.hasOwnProperty(getTeamName(record.team))) {
+			map[getTeamName(record.team)] += getRecordWar(record, war);
+		} else if (record.team) {
+			map[getTeamName(record.team)] = getRecordWar(record, war);
 		}
 	});
-	var largestKey = findLargestKey(map, 'war');
-	return {
-		logo  : largestKey,
-		color : map[largestKey].color
-	};
+	var team = findLargestKey(map);
+	console.log(team);
+	console.log(teamYearMap[team]);
+	return teamYearMap[team];
 }
 
 // helper function to adjust the location of the polygon label
@@ -714,7 +710,7 @@ function visualizeCareers(processedData, playerType, war, champ, age, awards, ba
 			skillPolygons[name].title = polyTitle;
 
 			// get the logo and color representing the player's career
-			var logoAndColor = chooseLogoAndColor(records, war);
+			var logoAndColor = chooseLogoAndColor(records, war, playerData.teamYearMap);
 
 			// add a key for the player to store the skill polygon for later access
 			skillPolygons[name].image = polySvg.append('image')
@@ -749,41 +745,6 @@ function visualizeCareers(processedData, playerType, war, champ, age, awards, ba
 		row.append('div').attr('class', 'col-xs-12').append('hr');
 
 		// ======================================== Team Logos and position
-		// helper function to ensure that NYG and SFG go to the same logo
-		function getTeamName(teamName) {
-			return teamName.substring(0, 3) === 'NYG' ? 'SFG' : teamName.substring(0, 3);
-		}
-
-		// get a map from team team (file name) to years
-		function getTeamYearMap(records) {
-			var map = {};
-			$.each(records, function(index, record) {
-				if (record.team && map.hasOwnProperty(getTeamName(record.team))) {
-					map[getTeamName(record.team)].years.push(record.year);
-				} else if (record.team) {
-					// an array for the years for which the team applies
-					map[getTeamName(record.team)] = {
-						years     : [record.year],
-						team      : getTeamName(record.team),
-						lastIndex : index
-					}
-				}
-			});
-			
-			for (team in map) {
-				// sort each individual set of years within a team
-		        map[team].years = map[team].years.sort(function(a, b) { return d3.ascending(a, b); });
-
-		        // mark the minYear and maxYear for each team
-		        map[team].minYear = map[team].years[0];
-		        map[team].maxYear = map[team].years[map[team].years.length - 1];
-
-		        // set the logo based on the last year with the team
-		        map[team].logo = records[map[team].lastIndex].teamImage;
-			}
-			return map;
-		}
-
 		// get most common position
 		function getPosition(records) {
 			var map = {};

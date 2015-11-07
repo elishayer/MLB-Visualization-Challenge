@@ -447,6 +447,42 @@ function getTeamColor(team) {
     }
 }
 
+// helper function to ensure that NYG and SFG go to the same logo
+function getTeamName(teamName) {
+    return teamName.substring(0, 3) === 'NYG' ? 'SFG' : teamName.substring(0, 3);
+}
+
+// get a map from team team (file name) to years
+function getTeamYearMap(records) {
+    var map = {};
+    $.each(records, function(index, record) {
+        if (record.team && map.hasOwnProperty(getTeamName(record.team))) {
+            map[getTeamName(record.team)].years.push(record.year);
+        } else if (record.team) {
+            // an array for the years for which the team applies
+            map[getTeamName(record.team)] = {
+                years     : [record.year],
+                team      : getTeamName(record.team),
+                lastIndex : index
+            }
+        }
+    });
+    
+    for (team in map) {
+        // sort each individual set of years within a team
+        map[team].years = map[team].years.sort(function(a, b) { return d3.ascending(a, b); });
+
+        // mark the minYear and maxYear for each team
+        map[team].minYear = map[team].years[0];
+        map[team].maxYear = map[team].years[map[team].years.length - 1];
+
+        // set the logo based on the last year with the team
+        map[team].logo = records[map[team].lastIndex].teamImage;
+        map[team].color = getTeamColor(team);
+    }
+    return map;
+}
+
 // helper function to get the name of the team image for a record
 function getTeamImage(team, year) {
     var file = '';
@@ -551,6 +587,7 @@ function processData(dataset, key, ageBounds, warStats) {
     });
 
     // for each player add in zeroed data for all ages that have no corresponding record
+    // also had a team-year map for logo choice
     for (var i = 0; i < processed[key].length; i++) {
         // for each possible age
         for (var age = ageBounds.min; age <= ageBounds.max; age++) {
@@ -565,6 +602,9 @@ function processData(dataset, key, ageBounds, warStats) {
         processed[key][i].records = processed[key][i].records.sort(function(a, b) {
             return d3.ascending(a.age, b.age);
         });
+
+        // get a map from team to years
+        processed[key][i].teamYearMap = getTeamYearMap(processed[key][i].records);
     }
 
     // sort within player type by first year in the majors
@@ -577,7 +617,6 @@ processData(hitterData, 'hitters', HITTER_AGE_BOUNDS, HITTER_WAR_STATS);
 
 // convert runs to WAR for hitter data for the following fields
 var conversionStats = ['Batting', 'Running', 'Fielding'];
-
 
 // convert from "value" to WAR
 // for each hitter
