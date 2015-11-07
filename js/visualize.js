@@ -213,7 +213,7 @@ var PITCHER_STATS_BASIC = [{name: 'Wins', key: 'W'}, {name: 'ERA', key: 'ERA'},
 var PITCHER_STATS_ADV = [{name: 'K/BB', key: 'KBB'}, {name: 'HR/9', key: 'HR9'},
 	{name: 'BABIP', key: 'BABIP'}, {name: 'FIP', key: 'FIP'},
 	{name: 'TBF', key: 'TBF'}, {name: 'TZ', key: 'TZ'}];
-var HITTER_STATS_BASIC = [{name: 'Average', key: 'AVG'}, {name: 'HR', key: 'HR'},
+var HITTER_STATS_BASIC = [{name: 'AVG', key: 'AVG'}, {name: 'HR', key: 'HR'},
 	{name: 'RBI', key: 'RBI'}, {name: 'Runs', key: 'R'},
 	{name: 'SB', key: 'SB'}, {name: 'FP', key: 'FP'}];
 var HITTER_STATS_ADV = [{name: 'OBP', key: 'OBP'}, {name: 'SLG', key: 'SLG'},
@@ -244,7 +244,7 @@ var mainRow = d3.select('body')
 // Overview for the project
 mainRow.append('h1').text('Major League Data Challenge 2015 Submission');
 mainRow.append('h2').text('Eli Shayer, Ryan Chen, Stephen Spears, Daniel Alvarado and Scott Powers');
-mainRow.append('p').html("In October, Graphicacy challenged the Internet to visualize the careers of the 20 greatest baseball players of all time. Below is our submission, created primarily using the JavaScript library D3. For each player, we plot his WAR by season, and note World Series, awards, and stat titles won. For <b>pitchers</b>, we show both RA9 WAR and FIP WAR (a more stable estimate of the pitcher's true talent) from ages 19 to 44. For <b>hitters</b>, we break down WAR into its fielding, hitting, and running components from ages 18 to 43. Our <b>interactive skills polygons</b> allow you to select any year or range of years on which to compare players' skills, using either basic or advanced stats. The outer vertices of the polygons represent the league leaders over that time and the blue polygon within similarly represents the league average.  All data come from <a href=" + '"http://www.baseball-reference.com/" target="_new"' + '>Baseball-Reference.com</a> and <a href="http://www.fangraphs.com/" target="_new">FanGraphs.com</a>. All team logos come from <a href="http://www.sportslogos.net/" target="_new">SportsLogos.net</a>. All portraits comes from <a href=http://www.baseball-reference.com/" target="_new">Baseball-Reference.com</a>.');
+mainRow.append('p').html("In October, Graphicacy challenged the Internet to visualize the careers of the 20 greatest baseball players of all time. Below is our submission, created primarily using the JavaScript library D3. For each player, we plot his WAR by season, and note World Series, awards, and stat titles won. For <b>pitchers</b>, we show both RA9 WAR and FIP WAR (a more stable estimate of the pitcher's true talent) from ages 19 to 44. For <b>hitters</b>, we break down WAR into its fielding, hitting, and running components from ages 18 to 43. Our <b>interactive skills polygons</b> allow you to select any year or range of years on which to compare players' skills, using either basic or advanced stats. The outer vertices of the polygons represent the league leaders over that time and the blue polygon within similarly represents the league average.  All data come from <a href=" + '"http://www.baseball-reference.com/" target="_new"' + '>Baseball-Reference.com</a> and <a href="http://www.fangraphs.com/" target="_new">FanGraphs.com</a>. All team logos come from <a href="http://www.sportslogos.net/" target="_new">SportsLogos.net</a>. All portraits come from <a href=http://www.baseball-reference.com/" target="_new">Baseball-Reference.com</a>.');
 
 // create two children from the main row: visualizations and navigation
 var visCol = mainRow.append('div').attr('class', 'col-sm-10').attr('id', 'vis');
@@ -417,7 +417,9 @@ function visualizeCareers(processedData, playerType, war, champ, age, awards, ba
 										.x(function(d) { return ageScale(d.age); })
 										.y(function(d) { return warScale(HITTER_WAR_GRAPH_FUNCTIONS[index + 1](d)); })
 										.interpolate('monotone')(playerData.records.reverse());
-				return 'M' + bottomPath.substring(1) + topPath + 'Z';
+
+				// combine the paths into a single stacked region
+				return 'M' + topPath.substring(1) + bottomPath + 'Z';
 			}
 		}
 
@@ -740,7 +742,7 @@ function visualizeCareers(processedData, playerType, war, champ, age, awards, ba
 		row.append('div').attr('class', 'col-sm-4 col-md-2 vis-form-wrapper');
 		row.append('div').attr('class', 'col-xs-12').append('hr');
 
-		// ======================================== Team Logos
+		// ======================================== Team Logos and position
 		// helper function to ensure that NYG and SFG go to the same logo
 		function getTeamName(teamName) {
 			return teamName.substring(0, 3) === 'NYG' ? 'SFG' : teamName.substring(0, 3);
@@ -776,6 +778,26 @@ function visualizeCareers(processedData, playerType, war, champ, age, awards, ba
 			return map;
 		}
 
+		// get most common position
+		function getPosition(records) {
+			var map = {};
+			console.log(records.name);
+			$.each(records, function(index, record) {
+				console.log(record.position);
+			/*
+				if (record.position && map.hasOwnProperty(getTeamName(record.team))) {
+					map[getTeamName(record.team)].years.push(record.year);
+				} else if (record.team) {
+					// an array for the years for which the team applies
+					map[getTeamName(record.team)] = {
+						years     : [record.year],
+						team      : getTeamName(record.team),
+						lastIndex : index
+					}
+				}*/
+			});
+		}
+
 		// recursively generate a string representing a set of sorted years
 		// returned as an array if there are multiple sets of years
 		function generateYearString(years) {
@@ -792,7 +814,10 @@ function visualizeCareers(processedData, playerType, war, champ, age, awards, ba
 			return string;
 		}
 
-		var logoYearMap = getTeamYearMap(playerData.records);
+
+		// get the most common position of the position of 
+		getPosition(playerData.records);
+		var logoYearMap = getTeamYearMap(playerData.records);		
 
 		var yLogo = LOGO_Y;
 		$.each(logoYearMap, function(index, value) {

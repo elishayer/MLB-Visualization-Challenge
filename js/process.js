@@ -479,7 +479,7 @@ var PITCHER_AGE_BOUNDS = {
 }
 var HITTER_AGE_BOUNDS = {
     min: 18,
-    max: 43
+    max: 44
 }
 
 var PITCHER_WAR_STATS = ['WARra9', 'WARfip'];
