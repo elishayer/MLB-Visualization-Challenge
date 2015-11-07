@@ -10,13 +10,13 @@
 // ======================================== Constants
 
 // Chart SVG size
-var CHART_WIDTH = 560;
+var CHART_WIDTH = 590;
 var CHART_HEIGHT = 250;
 
 // chart padding values
 var CHART_BOTTOM_PADDING = 55;
 var CHART_TOP_PADDING = 10;
-var CHART_LEFT_PADDING = 130;
+var CHART_LEFT_PADDING = 110;
 var CHART_RIGHT_PADDING = 20;
 
 // approximate number of ticks on the WAR axis
@@ -85,11 +85,11 @@ var LINE_WIDTH = 2;
 var EMPTY_LINE = 0;
 
 // Champion notes
-var CHAMP_SIZE = 7;        // set in the .champ-note class
+var CHAMP_SIZE = 8;        // set in the .champ-note class
 
 // Axis details
 var AXIS_TITLE_SIZE = 15;  // set in the .axis-title class
-var AXIS_LEFT_PADDING = 25;   // accounts for axis size and spacing
+var AXIS_LEFT_PADDING = 12;   // accounts for axis size and spacing
 var AXIS_TICK_SIZE = 10;
 
 // champion stats
@@ -105,7 +105,7 @@ var WAR_INTERIOR_PADDING = 3;
 // image location and size
 var IMAGE_X = 10;
 var IMAGE_Y = 5;
-var IMAGE_WIDTH = 80;
+var IMAGE_WIDTH = 70;
 var IMAGE_HEIGHT = 100;
 
 // team logo location and size
@@ -244,7 +244,7 @@ var mainRow = d3.select('body')
 // Overview for the project
 mainRow.append('h1').text('Major League Data Challenge 2015 Submission');
 mainRow.append('h2').text('Eli Shayer, Ryan Chen, Stephen Spears, Daniel Alvarado and Scott Powers');
-mainRow.append('p').html("In October, Graphicacy challenged the internet to visualize the careers of the 20 greatest baseball players of all time. Below is our submission, created primarily using the JavaScript library D3. For each player, we plot his WAR by season, and note World Series, awards, and stat titles won. For pitchers, we show both RA9 WAR and FIP WAR (a more stable estimate of the pitcher's true talent) from ages 19 to 44. For hitters, we break down WAR into its fielding, hitting, and running components from ages 18 to 43. Our interactive skills polygons allow you to select any year or range of years on which to compare players' skills, using either basic or advanced stats. The outer vertices of the polygons represent the league leaders over that time and the blue polygon within similarly represents the league average.  All data come from <a href=" + '"http://www.baseball-reference.com/" target="_new"' + '>Baseball-Reference.com</a> and <a href="http://www.fangraphs.com/" target="_new">FanGraphs.com</a>. All logos come from <a href="http://www.sportslogos.net/" target="_new">SportsLogos.net</a>.');
+mainRow.append('p').html("In October, Graphicacy challenged the Internet to visualize the careers of the 20 greatest baseball players of all time. Below is our submission, created primarily using the JavaScript library D3. For each player, we plot his WAR by season, and note World Series, awards, and stat titles won. For <b>pitchers</b>, we show both RA9 WAR and FIP WAR (a more stable estimate of the pitcher's true talent) from ages 19 to 44. For <b>hitters</b>, we break down WAR into its fielding, hitting, and running components from ages 18 to 43. Our <b>interactive skills polygons</b> allow you to select any year or range of years on which to compare players' skills, using either basic or advanced stats. The outer vertices of the polygons represent the league leaders over that time and the blue polygon within similarly represents the league average.  All data come from <a href=" + '"http://www.baseball-reference.com/" target="_new"' + '>Baseball-Reference.com</a> and <a href="http://www.fangraphs.com/" target="_new">FanGraphs.com</a>. All logos come from <a href="http://www.sportslogos.net/" target="_new">SportsLogos.net</a>.');
 
 // create two children from the main row: visualizations and navigation
 var visCol = mainRow.append('div').attr('class', 'col-sm-10').attr('id', 'vis');
@@ -695,7 +695,7 @@ function visualizeCareers(processedData, playerType, war, champ, age, awards, ba
 			var polyTitle = polySvg.append('text')
 									.attr('class', 'polygon-title')
 									.attr('y', POLY_TITLE_SIZE + POLY_TITLE_TOP_PADDING)
-									.text('Skills Polygon: ' + 'Career');
+									.text('Skills: ' + 'Career');
 
 			// adjust x position to center
 			polyTitle.attr('x', (POLY_WIDTH - $(polyTitle.node()).width()) / 2);

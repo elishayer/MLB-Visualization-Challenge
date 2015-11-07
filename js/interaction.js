@@ -211,7 +211,7 @@ function polyListener($parent) {
 	skillPolygons[name].image.attr('xlink:href', logoAndColor.logo);
 
 	// update the skill polygon title and adjust back to the middle
-	var titleText = 'Skills Polygon: ';
+	var titleText = 'Skills: ';
 	if (minYear === playerData.minYear && maxYear === playerData.maxYear) {
 		titleText += 'Career';
 	} else {

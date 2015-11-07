@@ -59,7 +59,7 @@ line {
 .champ-note {
     font-family: courier;
     font-weight: bold;
-    font-size: 7px; /* If changed, make corresponding change to js constant */
+    font-size: 8px; /* If changed, make corresponding change to js constant */
     fill: #000000;
 }
 
