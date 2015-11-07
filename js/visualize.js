@@ -136,7 +136,7 @@ var ICON_SIZE = 10;
 // Legend constants
 var LEGEND_WIDTH = 150;
 var LEGEND_HEIGHT = 130;
-var LEGEND_TITLE_SIZE = 15; // set in the .legend-title class
+var LEGEND_SIZE = 12;     // set in the .legend-content class
 var LEGEND_ENTRY_SIZE = 10;
 var LEGEND_PADDING = 15;
 var LEGEND_INTERIOR_PADDING = 5;
@@ -149,7 +149,7 @@ var LEGEND_CONTENTS = [
 	},
 	{
 		type   : 'subtitle',
-		text   : 'Pitchers:'
+		text   : 'Pitchers'
 	},
 	{
 		type   : 'line',
@@ -165,7 +165,7 @@ var LEGEND_CONTENTS = [
 	},
 	{
 		type   : 'subtitle',
-		text   : 'Hitters:'
+		text   : 'Hitters'
 	},
 	{
 		type   : 'icon',
@@ -248,7 +248,7 @@ var mainRow = d3.select('body')
 
 // Overview for the project
 mainRow.append('h1').text('Major League Data Challenge 2015 Submission');
-mainRow.append('h2').text('Eli Shayer, Ryan Chen, Stephen Spears, Daniel Alvarado and Scott Powers');
+mainRow.append('h2').text('Eli Shayer, Ryan Chen, Stephen Spears, Daniel Alvarado, and Scott Powers');
 mainRow.append('p').html("In October, Graphicacy challenged the Internet to visualize the careers of the 20 greatest baseball players of all time. Below is our submission, created primarily using the JavaScript library D3. For each player, we plot his WAR by season, and note World Series, awards, and stat titles won. For <b>pitchers</b>, we show both RA9 WAR and FIP WAR (a more stable estimate of the pitcher's true talent) from ages 19 to 44. For <b>hitters</b>, we break down WAR into its fielding, hitting, and running components from ages 18 to 43. Our <b>interactive skills polygons</b> allow you to select any year or range of years on which to compare players' skills, using either basic or advanced stats. The outer vertices of the polygons represent the league leaders over that time and the blue polygon within similarly represents the league average.  All data come from <a href=" + '"http://www.baseball-reference.com/" target="_new"' + '>Baseball-Reference.com</a> and <a href="http://www.fangraphs.com/" target="_new">FanGraphs.com</a>. All team logos come from <a href="http://www.sportslogos.net/" target="_new">SportsLogos.net</a>. All portraits come from <a href=http://www.baseball-reference.com/" target="_new">Baseball-Reference.com</a>.');
 
 // create two children from the main row: visualizations and navigation
@@ -853,9 +853,9 @@ function visualizeCareers(processedData, playerType, war, champ, age, awards, ba
 			yLogo += POSITION_NOTE_AREA_SIZE;
 		}
 
-		var logoYearMap = getTeamYearMap(playerData.records);		
+		var teamYearMap = getTeamYearMap(playerData.records);		
 
-		$.each(logoYearMap, function(index, value) {
+		$.each(teamYearMap, function(index, value) {
 			svg.append('image')
 				.attr('xlink:href', value.logo)
 				.attr('x', LOGO_X)
@@ -941,11 +941,26 @@ $.each(LEGEND_CONTENTS, function(index, content) {
 				.attr('class', 'legend-content')
 				.text(content.text);
 	} else if (content.type === 'subtitle') {
-		legend.append('text')
-				.attr('x', LEGEND_PADDING)
-				.attr('y', yLegend)
-				.attr('class', 'legend-content legend-subtitle')
-				.text(content.text);
+		var subtitle = legend.append('text')
+								.attr('x', LEGEND_WIDTH / 2)
+								.attr('y', yLegend)
+								.attr('class', 'legend-content legend-subtitle')
+								.text(content.text);
+		// center the subtitle
+		adjustObjLoc(subtitle);
+
+		// lines to separate the legend into sections
+		legend.append('line')
+				.attr('x1', 0)
+				.attr('y1', yLegend - LEGEND_ENTRY_SIZE / 2)
+				.attr('x2', subtitle.attr('x'))
+				.attr('y2', yLegend - LEGEND_ENTRY_SIZE / 2);
+		legend.append('line')
+				.attr('x1', parseInt(subtitle.attr('x')) + $(subtitle.node()).width())
+				.attr('y1', yLegend - LEGEND_ENTRY_SIZE / 2)
+				.attr('x2', LEGEND_WIDTH)
+				.attr('y2', yLegend - LEGEND_ENTRY_SIZE / 2);
+
 	} else {
 		console.log('Unrecognized legend content type: ' + content.type);
 	}
