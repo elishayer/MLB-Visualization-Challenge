@@ -189,9 +189,13 @@ function polyListener($parent) {
 
 	// if finalIndex isn't found or is the highest index, take records through the end
 	var records = finalIndex !== NOT_FOUND_SENTINEL && maxYear !== playerData.maxYear ?
-		// plus one to account for slice being exclusionary
+		// plus one to account for slice being exclusive
 		playerData.records.slice(startIndex, finalIndex + 1) :
 		playerData.records.slice(startIndex);
+
+	
+	// reduce records to only those in which they played (had a team)
+	records = records.filter(function(record) { return record.team; });
 
 	// get the d attribute for the skills polygon
 	var d = getPolygonPath(skills, records, minYear, maxYear);
@@ -245,11 +249,9 @@ function getPolygonPath(skills, records, minYear, maxYear) {
 
 	// maximum radius, to edge of polygon
 	var maxR = NUM_POLY * POLY_D_RADIUS;
-	//console.log(records);
-	//console.log(records[0].name + ' from ' + minYear + ' to ' + maxYear);
+
 	// for each skill
 	$.each(skills, function(index, skill) {
-		//console.log(skill.name + ': [' + d3.mean(records, function(d) { return d[skill.key + 'mean']; }) + ', ' + d3.mean(records, function(d) { return d[skill.key]; }) + ', ' + d3.mean(records, function(d) { return d[skill.key + 'best']; }) + ']');
 		var scale = d3.scale.linear()
 							// average all means and bests in the records
 							.domain([d3.mean(records, function(d) { return d[skill.key + 'mean']; }),
