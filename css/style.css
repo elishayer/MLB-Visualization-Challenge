@@ -16,7 +16,7 @@
     text-align: left;
 }
 
-/* Styles for the .axis class */
+/* Styles for axes and lines */
 .axis path, .axis line {
     fill: none;
     stroke: black;
@@ -36,6 +36,11 @@ line {
 .axis text {
     font-family: sans-serif;
     font-size: 11px;
+}
+
+.selection-line {
+    stroke: #ff0000;
+    stroke-dasharray: "3, 3";
 }
 
 /* Styles for textual titles: .chart-title .axis-title .vert-text */

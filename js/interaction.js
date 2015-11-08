@@ -176,7 +176,15 @@ function setDisabeled($parent, year, otherType, type) {
 	});
 }
 
-
+// helper function to get the year at a player's known age
+function yearToAge(year, records) {
+	for (var i = 0; i < records.length; i++) {
+		if (records[i].year && year === records[i].year) {
+			return records[i].age;
+		}
+	}
+	return NOT_FOUND_SENTINEL;
+}
 
 // sets the new polygon parameters and animates the changes
 function polyListener($parent) {
@@ -239,6 +247,40 @@ function polyListener($parent) {
 								.attr('y', getY(NUM_POLY * POLY_D_RADIUS, label.attr('angle')))
 				.text(skills[index].name), label.attr('angle'));
 	});
+
+	// remove any previous year lines
+	$parent.find('.selection-line').remove();
+
+	// add in lines marking the currently selected if the full career is not selected
+	if (minYear !== playerData.minYear || maxYear !== playerData.maxYear) {
+		// get age bounds
+		var ageBounds = AGE_MAP[position];
+		console.log(ageBounds);
+
+		// make a d3 age scale
+		var ageScale = d3.scale.linear()
+						  .domain([ageBounds.min, ageBounds.max])
+						  .range([CHART_LEFT_PADDING, CHART_WIDTH - CHART_RIGHT_PADDING]);
+
+		// get a d3 object representing the svg
+		var svg = d3.select($parent.find('svg')[0]);
+
+		// append one line at either end of the selection
+		svg.append('line')
+			.attr('x1', ageScale(yearToAge(minYear, playerData.records)))
+			.attr('y1', CHART_TOP_PADDING)
+			.attr('x2', ageScale(yearToAge(minYear, playerData.records)))
+			.attr('y2', CHART_HEIGHT - CHART_BOTTOM_PADDING)
+			.attr(DASHED_STYLE)
+			.attr('class', 'selection-line');
+		svg.append('line')
+			.attr('x1', ageScale(yearToAge(maxYear, playerData.records)))
+			.attr('y1', CHART_TOP_PADDING)
+			.attr('x2', ageScale(yearToAge(maxYear, playerData.records)))
+			.attr('y2', CHART_HEIGHT - CHART_BOTTOM_PADDING)
+			.attr(DASHED_STYLE)
+			.attr('class', 'selection-line');
+	}
 }
 
 // ======================================== Polygon Editing Functions
