@@ -10,25 +10,28 @@
 // add a ul element to hold the list of players
 var playerList = navCol.append('ul').attr('class', 'players-list');
 
-// helper function to create an li tag > a tag with an href, class, and text
-function createLinkLi(playerType, text, liClass, liId, href) {
-	playerList.append('li')
-				.attr('class', liClass)
-				.attr('id', liId)
-				.attr('parent', playerType + '-li')
-				.append('a')
-				.attr('href', '#' + href)
-				.text(text);
+// helper function to append a li tag > a tag with an href, class, and text to a parent
+function appendLi(parent, text, liClass, liId, href, ulChild) {
+	var li = parent.append('li')
+					.attr('class', liClass)
+					.attr('id', liId);
+	li.append('a')
+		.attr('href', '#' + href)
+		.text(text);
+
+	if (ulChild) {
+		return li.append('ul').attr('class', 'sub-players-list');
+	}
 }
 
 // for both hitters and pitchers
 for (playerType in processed) {
 	// add a player category li to the ul
-	createLinkLi(playerType, playerType, 'nav-category', playerType + '-li', playerType + '-vis');
+	var sublist = appendLi(playerList, playerType, 'nav-category', playerType + '-li', playerType + '-vis', true);
 
 	// add an individual player li to the ul
 	$.each(processed[playerType], function(index, player) {
-		createLinkLi(playerType, player.name, 'nav-player', player.id + '-li', player.id);
+		appendLi(sublist, player.name, 'nav-player', player.id + '-li', player.id);
 	});
 }
 
@@ -65,6 +68,12 @@ SKILLS_MAP = {
 WAR_MAP = {
 	hitters  : HITTER_WAR,
 	pitchers : PITCHER_WAR
+}
+
+// map from position to age bounds
+AGE_MAP = {
+	hitters  : HITTER_AGE_BOUNDS,
+	pitchers : PITCHER_AGE_BOUNDS
 }
 
 // for each player's form-wrapper, create a form
@@ -167,7 +176,9 @@ function setDisabeled($parent, year, otherType, type) {
 	});
 }
 
-// sets the 
+
+
+// sets the new polygon parameters and animates the changes
 function polyListener($parent) {
 	// collect event information
 	var name = $parent.attr('name');
@@ -277,9 +288,13 @@ var LEGEND_BUFFER = 10;
 
 // a buffer from the top of the screen when viewing players
 var PLAYER_LIST_BUFFER = LEGEND_HEIGHT + 20;
-PLAYER_LIST_BUFFER
+
 // a buffer from the top of the screen to determine which player is being viewed
 var BUFFER_VIEW = 200;
+
+// are the hitters/pitchers hidden
+var areHittersHidden = false;
+var arePitchersHidden = false;
 
 // selected class name
 var selectedClass = 'active-li';
@@ -312,6 +327,7 @@ var $window = $(window);
 $window.scroll(function () {
 	// position the players list on the screen based on the scroll location
 	var screenTop = $window.scrollTop();
+
 	// if above all players, normal position and no players are selected
 	if (screenTop < preBreakpoint) {
 		$playersList.css({
@@ -348,7 +364,7 @@ $window.scroll(function () {
 		if($(document).height() - $window.scrollTop() - $window.height() <= 1) {
 			$('.' + selectedClass).toggleClass(selectedClass, false);
 			$('#' + $lastPlayer[0].id + '-li').toggleClass(selectedClass, true);
-			$('#hitters-li').toggleClass(selectedClass, true);
+			$('#hitters-li > a').toggleClass(selectedClass, true);
 		}
 		// if above all players, nothing is active
 		else if (screenTop < topBreakpoint) {
@@ -366,22 +382,59 @@ $window.scroll(function () {
 
 				// protect against setting the active player again after it has been set
 				if (!activePlayerSet) {
-
 					// if the current player is the viewed player
 					if ($player.offset().top + $player.outerHeight() > screenTop + BUFFER_VIEW) {
-						// cache the id of the player in the ul list
-						var listId = '#' + id + '-li';
+						if (!(areHittersHidden && $player.attr('position') === 'hitters') && !(arePitchersHidden && $player.attr('position') === 'pitchers')) {
+							// cache the jQuery object of the li corresponding to the player
+							var $playerLi = $('#' + id + '-li');
 
-						// protect against setting the current player when it would result in no change
-						if (!$(listId).hasClass(selectedClass)) {
-							$('.' + selectedClass).toggleClass(selectedClass, false);
-							$(listId).toggleClass(selectedClass, true);
-							$('#' + $(listId).attr('parent')).toggleClass(selectedClass, true);
+							// protect against setting the current player when it would result in no change
+							if (!$playerLi.hasClass(selectedClass)) {
+								$('.' + selectedClass).toggleClass(selectedClass, false);
+								$playerLi.toggleClass(selectedClass, true);
+								$playerLi.parents('.nav-category').toggleClass(selectedClass, true);
+							}
+							activePlayerSet = true;	
 						}
-						activePlayerSet = true;	
 					}
 				}
 			});
 		}
 	}
 });
+
+// ======================================== Navigation tabs
+$('#nav-tab-all').click(function(event) {
+	navigationListener($(this), true, true);
+});
+
+$('#nav-tab-pitchers').click(function(event) {
+	navigationListener($(this), true, false);
+});
+
+$('#nav-tab-hitters').click(function(event) {
+	navigationListener($(this), false, true);
+});
+
+// navigation click listener
+function navigationListener($this, pitchersVisible, hittersVisible) {
+	// set the hidden variables
+	areHittersHidden = !hittersVisible;
+	arePitchersHidden = !pitchersVisible;
+
+	// remove the .active class from the currently active tab
+	$this.parents('.nav-pills').find('.active').removeClass('active');
+
+	// add the .active class to the li that was just clicked
+	$this.parent().addClass('active');
+
+	// set pitcher visiblity
+	$('.player-vis[position="pitchers"]').toggle(pitchersVisible);
+	$('#pitchers-vis').toggle(pitchersVisible);
+	$('#pitchers-li').toggle(pitchersVisible);
+
+	// set pitcher visiblity
+	$('.player-vis[position="hitters"]').toggle(hittersVisible);
+	$('#hitters-vis').toggle(hittersVisible);
+	$('#hitters-li').toggle(hittersVisible);
+}

@@ -137,6 +137,7 @@ var ICON_SIZE = 10;
 var LEGEND_WIDTH = 150;
 var LEGEND_HEIGHT = 130;
 var LEGEND_SIZE = 12;     // set in the .legend-content class
+var LEGEND_TEXT_OFFSET = 8;
 var LEGEND_ENTRY_SIZE = 10;
 var LEGEND_PADDING = 15;
 var LEGEND_INTERIOR_PADDING = 5;
@@ -237,6 +238,22 @@ var ZERO_EPSILON = 0.001 // zero with a bound
 // variable for later transitions of skill polygons
 var skillPolygons = {};
 
+// navigation tabs
+var NAV_TABS = [
+	{
+		text : 'All Players',
+		id   : 'nav-tab-all'
+	},
+	{
+		text : 'Pitchers',
+		id   : 'nav-tab-pitchers'
+	},
+	{
+		text : 'Hitters',
+		id   : 'nav-tab-hitters'
+	}
+];
+
 // ======================================== Setup DOM
 
 // initialize a bootstrap container then a main row
@@ -248,12 +265,31 @@ var mainRow = d3.select('body')
 
 // Overview for the project
 mainRow.append('h1').text('Major League Data Challenge 2015 Submission');
-mainRow.append('h2').text('Eli Shayer, Ryan Chen, Stephen Spears, Daniel Alvarado, and Scott Powers');
+mainRow.append('h3').text('Eli Shayer, Ryan Chen, Stephen Spears, Daniel Alvarado, and Scott Powers');
 mainRow.append('p').html("In October, Graphicacy challenged the Internet to visualize the careers of the 20 greatest baseball players of all time. Below is our submission, created primarily using the JavaScript library D3. For each player, we plot his WAR by season, and note World Series, awards, and stat titles won. For <b>pitchers</b>, we show both RA9 WAR and FIP WAR (a more stable estimate of the pitcher's true talent) from ages 19 to 44. For <b>hitters</b>, we break down WAR into its fielding, hitting, and running components from ages 18 to 43. Our <b>interactive skills polygons</b> allow you to select any year or range of years on which to compare players' skills, using either basic or advanced stats. The outer vertices of the polygons represent the league leaders over that time and the blue polygon within similarly represents the league average.  All data come from <a href=" + '"http://www.baseball-reference.com/" target="_new"' + '>Baseball-Reference.com</a> and <a href="http://www.fangraphs.com/" target="_new">FanGraphs.com</a>. All team logos come from <a href="http://www.sportslogos.net/" target="_new">SportsLogos.net</a>. All portraits come from <a href=http://www.baseball-reference.com/" target="_new">Baseball-Reference.com</a>.');
 
 // create two children from the main row: visualizations and navigation
 var visCol = mainRow.append('div').attr('class', 'col-sm-10').attr('id', 'vis');
 var navCol = mainRow.append('div').attr('class', 'col-sm-2').attr('id', 'nav');
+
+// add justified navigation tabs to the visCol
+var navTabs = visCol.append('ul').attr('class', 'nav nav-pills nav-justified');
+
+// append each tab to the navTabs ul
+$.each(NAV_TABS, function(index, tab) {
+	var tabLi = navTabs.append('li')
+						.attr('role', 'presentation');
+	var tabA = tabLi.append('a')
+					.attr('href', '#')
+					.attr('id', tab.id)
+					.text(tab.text);
+
+	// mark the first tab as active
+	if (index === 0) {
+		tabLi.attr('class','active');
+	}
+});
+
 
 // helper function to adjust for text width to center an object
 // allows for adjustment in either the x or y dimension, defaulting to x
@@ -382,7 +418,7 @@ function visualizeCareers(processedData, playerType, war, champ, age, awards, ba
 						.attr('id', playerData.id)
 						.attr('name', playerData.name)
 						.attr('position', playerType)
-						.attr('class', 'row player-vis');
+						.attr('class', 'row player-vis ' + playerType + '-vis');
 
 		// add a title corresponding to the player name
 		row.append('h3')
@@ -883,19 +919,19 @@ $.each(LEGEND_CONTENTS, function(index, content) {
 			line.style(DASHED_STYLE);
 		}
 		legend.append('text')
-				.attr('x', LEGEND_WIDTH / 2 + 8)
+				.attr('x', LEGEND_WIDTH / 2 + LEGEND_TEXT_OFFSET)
 				.attr('y', yLegend)
 				.attr('class', 'legend-content')
 				.text(content.text);
 	} else if (content.type === 'icon') {
 		legend.append('image')
 				.attr('xlink:href', './images/icons/' + content.link)
-				.attr('x', LEGEND_WIDTH / 4 - 5)
+				.attr('x', LEGEND_WIDTH / 4 - LEGEND_ICON_SIZE / 2)
 				.attr('y', yLegend - ICON_SIZE * 1.25)
 				.attr('width', LEGEND_ICON_SIZE)
 				.attr('height', LEGEND_ICON_SIZE);
 		legend.append('text')
-				.attr('x', LEGEND_WIDTH / 2 + 8)
+				.attr('x', LEGEND_WIDTH / 2 + LEGEND_TEXT_OFFSET)
 				.attr('y', yLegend)
 				.attr('class', 'legend-content')
 				.text(content.text);
@@ -919,9 +955,6 @@ $.each(LEGEND_CONTENTS, function(index, content) {
 				.attr('y1', yLegend - LEGEND_ENTRY_SIZE / 2)
 				.attr('x2', LEGEND_WIDTH)
 				.attr('y2', yLegend - LEGEND_ENTRY_SIZE / 2);
-
-	} else {
-		console.log('Unrecognized legend content type: ' + content.type);
 	}
 	yLegend += LEGEND_ENTRY_SIZE + LEGEND_INTERIOR_PADDING;
 });
