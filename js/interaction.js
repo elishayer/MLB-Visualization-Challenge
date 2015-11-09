@@ -35,6 +35,73 @@ for (playerType in processed) {
 	});
 }
 
+// ======================================== Modal
+// constants
+var POSITION_TYPES = [
+	{
+		position : 'Hitters',
+		value    : 'h',
+	},
+	{
+		position : 'Pitchers',
+		value    : 'p',
+	}
+];
+// add to the modal architecture
+var modal = d3.select('#modal')
+				.attr('class', 'modal fade')
+				.append('div')
+				.attr('class', 'modal-dialog modal-ssac')
+				.append('div')
+				.attr('class', 'modal-content');
+
+// create the modal header
+var modalHeader = modal.append('div').attr('class', 'modal-header')
+modalHeader.append('button')
+			.attr('type', 'button')
+			.attr('class', 'close')
+			.attr('data-dismiss', 'modal')
+			.attr('aria-label', 'Close')
+			.append('span')
+			.attr('aria-hidden', 'true')
+			.html('&times;');
+modalHeader.append('h4')
+			.attr('class', 'modal-title')
+			.text('Player Comparison');
+
+
+var modalBody = modal.append('div').attr('class', 'modal-body');
+var modalForm = modalBody.append('div').attr('class', 'row')
+		.append('div').attr('class', 'col-xs-12').attr('id', 'modal-form');
+var modalGraphs = modalBody.append('div').attr('class', 'row');
+var modalFirstGraph = modalGraphs.append('div').attr('class', 'col-xs-6');
+var modalSecondGraph = modalGraphs.append('div').attr('class', 'col-xs-6');
+
+modalForm.append('p').text('Select the type of player to compare...');
+modalForm.append('label')
+			.attr('for', '#modal-position-select')
+			.text('Position');
+// add a hitter/pitcher selection button
+var modalPositionSelect = modalForm.append('select')
+									.attr('id', 'modal-position-select');
+
+modalPositionSelect.append('option')
+					.attr('value', '')
+					.text('--- Select ---');
+
+$.each(POSITION_TYPES, function(index, type) {
+	modalPositionSelect.append('option')
+						.attr('value', type.value)
+						.text(type.position);
+});
+
+var modalFooter = modal.append('div').attr('class', 'modal-footer');
+modalFooter.append('button')
+			.attr('type', 'button')
+			.attr('class', 'btn btn-primary')
+			.attr('data-dismiss', 'modal')
+			.text('Close');
+
 // ======================================== Visualization Manipulation Forms
 // -------------------- Constants
 // animation length
@@ -138,7 +205,7 @@ $('input').change(function(event) {
 	polyListener($(this).parents('.player-vis'));
 });
 
-$('select').change(function(event) {
+$('.vis-form-wrapper > select').change(function(event) {
 	// collect event data
 	var $this = $(this);
 	var year = $this.val();
@@ -150,7 +217,7 @@ $('select').change(function(event) {
 	polyListener($this.parents('.player-vis'));
 });
 
-$('button').click(function(event) {
+$('.vis-form-wrapper > button').click(function(event) {
 	var $parent = $(this).parents('.player-vis');
 
 	// collect event information
@@ -255,7 +322,6 @@ function polyListener($parent) {
 	if (minYear !== playerData.minYear || maxYear !== playerData.maxYear) {
 		// get age bounds
 		var ageBounds = AGE_MAP[position];
-		console.log(ageBounds);
 
 		// make a d3 age scale
 		var ageScale = d3.scale.linear()
@@ -263,7 +329,7 @@ function polyListener($parent) {
 						  .range([CHART_LEFT_PADDING, CHART_WIDTH - CHART_RIGHT_PADDING]);
 
 		// get a d3 object representing the svg
-		var svg = d3.select($parent.find('svg')[0]);
+		var svg = d3.select($parent.find('.chart')[0]);
 
 		// append one line at either end of the selection
 		svg.append('line')
@@ -347,11 +413,12 @@ var $firstPlayer = $($allPlayers[0]);
 var $lastPlayer = $($allPlayers[$allPlayers.length - 1]);
 
 // use those two players to get breakpoints
-var preBreakpoint, topBreakpoint, bottomBreakpoint;
+var preBreakpoint, topBreakpoint, bottomBreakpoint, tabsBreakpoint;
 setBreakpoints = function() {
 	preBreakpoint = $('#vis').offset().top;
 	topBreakpoint = $firstPlayer.offset().top;
 	bottomBreakpoint = $lastPlayer.offset().top;
+	tabsBreakpoint = $('.nav-justified').offset().top;
 };
 
 // initial call of set breakpoints
@@ -363,6 +430,7 @@ $(window).resize(setBreakpoints);
 // cache jQuery objects for efficiency
 var $playersList = $('.players-list');
 var $legendSvg = $('.legend-svg');
+var $tabs = $('.nav-justified');
 var $window = $(window);
 
 // respond every time a scroll occurs
@@ -443,9 +511,24 @@ $window.scroll(function () {
 			});
 		}
 	}
+/*
+	// set navigation position
+	if (screenTop < tabsBreakpoint) {
+		$tabs.css({
+			position: 'relative',
+			top: ''
+		});
+	} else {
+		$tabs.css({
+			position: 'absolute',
+			top: '0'
+		});
+	}
+*/
 });
 
 // ======================================== Navigation tabs
+var $currentTab = $('#nav-tab-all');
 $('#nav-tab-all').click(function(event) {
 	navigationListener($(this), true, true);
 });
@@ -470,6 +553,8 @@ function navigationListener($this, pitchersVisible, hittersVisible) {
 	// add the .active class to the li that was just clicked
 	$this.parent().addClass('active');
 
+	$currentTab = $this;
+
 	// set pitcher visiblity
 	$('.player-vis[position="pitchers"]').toggle(pitchersVisible);
 	$('#pitchers-vis').toggle(pitchersVisible);
@@ -480,3 +565,113 @@ function navigationListener($this, pitchersVisible, hittersVisible) {
 	$('#hitters-vis').toggle(hittersVisible);
 	$('#hitters-li').toggle(hittersVisible);
 }
+
+$('#nav-tab-comparison').click(function(event) {
+	// cache for efficency
+	var $this = $(this);
+
+	// cache the previous tab selection
+	var $prevTab = $this.parents('.nav-pills').find('.active');
+	// remove the .active class from the currently active tab
+	$prevTab.removeClass('active');
+
+	// add the .active class to the li that was just clicked
+	$this.parent().addClass('active');
+
+	// call the modal
+	$('#modal').modal({
+		backdrop : true,
+		keyboard : true,
+		show     : true
+	});
+
+	// return to the previous tab selection upon the modal being closed
+	$('#modal').on('hidden.bs.modal', function(event) {
+		$this.parent().removeClass('active');
+		$currentTab.parent().addClass('active');
+		// clear the contents
+		$('#modal-position-select').val('');
+		$('#modal-form > label').remove();	
+		$('#modal-first-player').remove();
+		$('#modal-second-player').remove();
+	});
+});
+
+// ======================================== Modal interactions
+$('#modal-position-select').change(function() {
+	// cache for efficency
+	var $this = $(this);
+
+	// only if '--- Select ---' is not chosen
+	if ($this.val()) {
+		modalForm.append('label')
+					.attr('for', '#modal-first-player')
+					.text('First Player');
+		var firstPlayerSelect = modalForm.append('select')
+											.attr('id', 'modal-first-player');
+		firstPlayerSelect.append('option')
+							.attr('value', '')
+							.text('--- Select ---');
+		var selector = ($this.val() === 'h' ? '.hitters-vis' : '.pitchers-vis');
+		$.each($(selector), function(index, player) {
+			var $player = $(player);
+			firstPlayerSelect.append('option')
+								.attr('value', $player.attr('id'))
+								.text($player.attr('name'));
+		});
+	} else {
+		$('#modal-first-player').remove();
+		$('#modal-second-player').remove();
+	}
+
+	// event listener for the new first player selector
+	$('#modal-first-player').change(function() {
+		// cache for efficency
+		var $this = $(this);
+
+		// only if '--- Select ---' is not chosen
+		if ($this.val()) {
+			modalForm.append('label')
+						.attr('for', '#secondPlayer')
+						.text('Second Player');
+			var secondPlayerSelect = modalForm.append('select')
+												.attr('id', 'modal-second-player');
+			$.each($('#modal-first-player > option'), function(index, option) {
+				var $option = $(option);
+				if ($option.val() !== $('#modal-first-player').val()) {
+					secondPlayerSelect.append('option')
+										.attr('value', $option.attr('value'))
+										.text($option.text());
+				}
+			});
+
+			// put the second player into the first graph slot
+			cloneGraphToModal(modalFirstGraph, $this.val());
+
+		} else {
+			$('#modal-second-player').remove();
+		}
+
+		// event listener for the new second player selector
+		$('#modal-second-player').change(function() {
+			cloneGraphToModal(modalSecondGraph, $(this).val());
+		});
+	});
+});
+
+// clones the graph into the wrapper
+function cloneGraphToModal(d3wrapper, id) {
+	// cache the wrapper and the player row
+	var $wrapper = $(d3wrapper.node());
+	var $playerRow = $('#' + id);
+
+	// add a title
+	d3wrapper.append('h3').text($playerRow.attr('name'));
+
+	// empty the wrapper
+	$wrapper.children().remove();
+	
+	// place a cloned version of the graph into the wrapper
+	$playerRow.find('.chart').appendTo($wrapper);
+}
+

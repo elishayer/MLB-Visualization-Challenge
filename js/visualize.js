@@ -251,6 +251,10 @@ var NAV_TABS = [
 	{
 		text : 'Hitters',
 		id   : 'nav-tab-hitters'
+	},
+	{
+		text : 'Comparison',
+		id   : 'nav-tab-comparison'
 	}
 ];
 
@@ -267,6 +271,9 @@ var mainRow = d3.select('body')
 mainRow.append('h1').text('Major League Data Challenge 2015 Submission');
 mainRow.append('h3').text('Eli Shayer, Ryan Chen, Stephen Spears, Daniel Alvarado, and Scott Powers');
 mainRow.append('p').html("In October, Graphicacy challenged the Internet to visualize the careers of the 20 greatest baseball players of all time. Below is our submission, created primarily using the JavaScript library D3. For each player, we plot his WAR by season, and note World Series, awards, and stat titles won. For <b>pitchers</b>, we show both RA9 WAR and FIP WAR (a more stable estimate of the pitcher's true talent) from ages 19 to 44. For <b>hitters</b>, we break down WAR into its fielding, hitting, and running components from ages 18 to 43. Our <b>interactive skills polygons</b> allow you to select any year or range of years on which to compare players' skills, using either basic or advanced stats. The outer vertices of the polygons represent the league leaders over that time and the blue polygon within similarly represents the league average.  All data come from <a href=" + '"http://www.baseball-reference.com/" target="_new"' + '>Baseball-Reference.com</a> and <a href="http://www.fangraphs.com/" target="_new">FanGraphs.com</a>. All team logos come from <a href="http://www.sportslogos.net/" target="_new">SportsLogos.net</a>. All portraits come from <a href=http://www.baseball-reference.com/" target="_new">Baseball-Reference.com</a>.');
+
+// create a modal div that will be expanded in interaction.js
+d3.select('body').append('div').attr('id', 'modal');
 
 // create two children from the main row: visualizations and navigation
 var visCol = mainRow.append('div').attr('class', 'col-sm-10').attr('id', 'vis');
@@ -430,6 +437,7 @@ function visualizeCareers(processedData, playerType, war, champ, age, awards, ba
 		var svg = row.append('div')
 						.attr('class', 'col-sm-12 col-md-7')
 						.append('svg')
+						.attr('class', 'chart')
 						.attr('width', CHART_WIDTH)
 						.attr('height', CHART_HEIGHT);
 
@@ -642,6 +650,7 @@ function visualizeCareers(processedData, playerType, war, champ, age, awards, ba
 		var polySvg = row.append('div')
 							.attr('class', 'col-sm-8 col-md-3')
 							.append('svg')
+							.attr('class', 'poly')
 							.attr('width', POLY_WIDTH)
 							.attr('height', POLY_HEIGHT);
 

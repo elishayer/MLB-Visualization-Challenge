@@ -40,7 +40,6 @@ line {
 
 .selection-line {
     stroke: #ff0000;
-    stroke-dasharray: "3, 3";
 }
 
 /* Styles for textual titles: .chart-title .axis-title .vert-text */
@@ -191,4 +190,9 @@ line {
 hr {
     margin-top: 5px;
     margin-bottom: 5px;
+}
+
+/* modal styles */
+.modal-ssac {
+    width: 1200px;
 }
