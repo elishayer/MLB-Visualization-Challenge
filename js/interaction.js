@@ -74,10 +74,10 @@ var modalBody = modal.append('div').attr('class', 'modal-body');
 var modalForm = modalBody.append('div').attr('class', 'row')
 		.append('div').attr('class', 'col-xs-12').attr('id', 'modal-form');
 var modalGraphs = modalBody.append('div').attr('class', 'row');
-var modalFirstGraph = modalGraphs.append('div').attr('class', 'col-xs-6');
-var modalSecondGraph = modalGraphs.append('div').attr('class', 'col-xs-6');
+var modalFirstGraph = modalGraphs.append('div').attr('class', 'col-xs-6 modal-graph');
+var modalSecondGraph = modalGraphs.append('div').attr('class', 'col-xs-6 modal-graph');
 
-modalForm.append('p').text('Select the type of player to compare...');
+modalForm.append('p').attr('id', 'modal-form-note').text('Select the type of player to compare. Hit the Reset button to make a new selection!');
 modalForm.append('label')
 			.attr('for', '#modal-position-select')
 			.text('Position');
@@ -96,6 +96,11 @@ $.each(POSITION_TYPES, function(index, type) {
 });
 
 var modalFooter = modal.append('div').attr('class', 'modal-footer');
+modalFooter.append('button')
+			.attr('type', 'button')
+			.attr('class', 'btn btn-danger')
+			.attr('id', 'modal-reset')
+			.text('Reset');
 modalFooter.append('button')
 			.attr('type', 'button')
 			.attr('class', 'btn btn-primary')
@@ -589,22 +594,37 @@ $('#nav-tab-comparison').click(function(event) {
 	$('#modal').on('hidden.bs.modal', function(event) {
 		$this.parent().removeClass('active');
 		$currentTab.parent().addClass('active');
-		// clear the contents
-		$('#modal-position-select').val('');
-		$('#modal-form > label').remove();	
-		$('#modal-first-player').remove();
-		$('#modal-second-player').remove();
+
+		resetModal();
 	});
 });
 
 // ======================================== Modal interactions
+$('#modal-reset').click(function() {
+	resetModal();
+});
+
+// reset the modal by removing elements and reseting the position selector
+function resetModal() {
+	// clear the contents
+	$('#modal-position-select').val('');
+	$('#modal-position-select').prop('disabled', false);
+	$('.modal-temp-label').remove();	
+	$('#modal-first-player').remove();
+	$('#modal-second-player').remove();
+	$('.modal-graph').children().remove();
+}
+
 $('#modal-position-select').change(function() {
 	// cache for efficency
 	var $this = $(this);
 
 	// only if '--- Select ---' is not chosen
 	if ($this.val()) {
+		$('#modal-position-select').prop('disabled', true);
+
 		modalForm.append('label')
+					.attr('class', 'modal-temp-label')
 					.attr('for', '#modal-first-player')
 					.text('First Player');
 		var firstPlayerSelect = modalForm.append('select')
@@ -619,44 +639,52 @@ $('#modal-position-select').change(function() {
 								.attr('value', $player.attr('id'))
 								.text($player.attr('name'));
 		});
+		// disable the previous position select
+		$('#modal-position-select').attr('disabled');
+
+		// event listener for the new first player selector
+		$('#modal-first-player').change(function() {
+			// cache for efficency
+			var $this = $(this);
+
+			// only if '--- Select ---' is not chosen
+			if ($this.val()) {
+				$('#modal-first-player').prop('disabled', true);
+
+				modalForm.append('label')
+							.attr('class', 'modal-temp-label')
+							.attr('for', '#secondPlayer')
+							.text('Second Player');
+				var secondPlayerSelect = modalForm.append('select')
+													.attr('id', 'modal-second-player');
+				$.each($('#modal-first-player > option'), function(index, option) {
+					var $option = $(option);
+					if ($option.val() !== $('#modal-first-player').val()) {
+						secondPlayerSelect.append('option')
+											.attr('value', $option.attr('value'))
+											.text($option.text());
+					}
+				});
+
+				// put the second player into the first graph slot
+				cloneGraphToModal(modalFirstGraph, $this.val());
+
+				// event listener for the new second player selector
+				$('#modal-second-player').change(function() {
+					if ($this.val()) {
+						$('#modal-second-player').prop('disabled', true);
+						cloneGraphToModal(modalSecondGraph, $(this).val());
+					}
+				});
+
+			} else {
+				$('#modal-second-player').remove();
+			}
+		});
 	} else {
 		$('#modal-first-player').remove();
 		$('#modal-second-player').remove();
 	}
-
-	// event listener for the new first player selector
-	$('#modal-first-player').change(function() {
-		// cache for efficency
-		var $this = $(this);
-
-		// only if '--- Select ---' is not chosen
-		if ($this.val()) {
-			modalForm.append('label')
-						.attr('for', '#secondPlayer')
-						.text('Second Player');
-			var secondPlayerSelect = modalForm.append('select')
-												.attr('id', 'modal-second-player');
-			$.each($('#modal-first-player > option'), function(index, option) {
-				var $option = $(option);
-				if ($option.val() !== $('#modal-first-player').val()) {
-					secondPlayerSelect.append('option')
-										.attr('value', $option.attr('value'))
-										.text($option.text());
-				}
-			});
-
-			// put the second player into the first graph slot
-			cloneGraphToModal(modalFirstGraph, $this.val());
-
-		} else {
-			$('#modal-second-player').remove();
-		}
-
-		// event listener for the new second player selector
-		$('#modal-second-player').change(function() {
-			cloneGraphToModal(modalSecondGraph, $(this).val());
-		});
-	});
 });
 
 // clones the graph into the wrapper
@@ -671,7 +699,12 @@ function cloneGraphToModal(d3wrapper, id) {
 	// empty the wrapper
 	$wrapper.children().remove();
 	
-	// place a cloned version of the graph into the wrapper
-	$playerRow.find('.chart').appendTo($wrapper);
-}
+	// ge a cloned version of the graph
+	var $graph = $playerRow.find('.chart').clone();
 
+	// remove vertical lines
+	$graph.find('.selection-line').remove();
+
+	// append to the wrapper
+	$graph.appendTo($wrapper);
+}
